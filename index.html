@@ -1,0 +1,933 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>AI 职业人格测试</title>
+<style>
+  :root {
+    --bg: #06060f;
+    --surface: rgba(255,255,255,0.03);
+    --border: rgba(255,255,255,0.06);
+    --text: #e2e2ea;
+    --text-secondary: #8b8b9e;
+    --accent-1: #00d4ff;
+    --accent-2: #7b5cff;
+    --accent-3: #ff4785;
+    --accent-4: #00e5a0;
+    --accent-5: #ffb347;
+    --radius: 18px;
+    --radius-sm: 12px;
+    --transition: 0.35s cubic-bezier(0.25, 0.8, 0.25, 1.2);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100dvh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow-x: hidden;
+    -webkit-tap-highlight-color: transparent;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Background ambient */
+  .bg-ambient {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+  }
+  .bg-orb {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(120px);
+    opacity: 0.12;
+    animation: orbFloat 20s ease-in-out infinite;
+  }
+  .bg-orb:nth-child(1) { width: 600px; height: 600px; background: var(--accent-2); top: -200px; left: -200px; animation-delay: 0s; }
+  .bg-orb:nth-child(2) { width: 500px; height: 500px; background: var(--accent-1); bottom: -200px; right: -150px; animation-delay: -7s; }
+  .bg-orb:nth-child(3) { width: 400px; height: 400px; background: var(--accent-3); top: 40%; left: 50%; animation-delay: -14s; }
+
+  @keyframes orbFloat {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    25% { transform: translate(60px, -60px) scale(1.15); }
+    50% { transform: translate(-30px, 40px) scale(0.9); }
+    75% { transform: translate(-50px, -30px) scale(1.1); }
+  }
+
+  /* Grid overlay */
+  .bg-grid {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    background-image:
+      linear-gradient(rgba(255,255,255,0.015) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.015) 1px, transparent 1px);
+    background-size: 60px 60px;
+    mask-image: radial-gradient(ellipse 80% 80% at 50% 50%, black 20%, transparent 70%);
+  }
+
+  /* Particles */
+  #particles {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* App container */
+  .app {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    max-width: 640px;
+    margin: 0 16px;
+  }
+
+  /* Screen management */
+  .screen { display: none; }
+  .screen.active { display: block; }
+
+  /* Cards */
+  .card {
+    background: var(--surface);
+    backdrop-filter: blur(40px);
+    -webkit-backdrop-filter: blur(40px);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 36px 32px;
+    animation: cardIn 0.5s ease;
+  }
+  @keyframes cardIn {
+    from { opacity: 0; transform: translateY(24px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Welcome screen */
+  .welcome-icon {
+    width: 72px; height: 72px;
+    margin: 0 auto 20px;
+    background: linear-gradient(135deg, var(--accent-1), var(--accent-2));
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 34px;
+    box-shadow: 0 12px 40px rgba(0,212,255,0.2);
+  }
+
+  .title {
+    font-size: 2rem;
+    font-weight: 700;
+    text-align: center;
+    letter-spacing: -0.5px;
+    margin-bottom: 8px;
+    background: linear-gradient(135deg, #e8e8f0 0%, #c0c0d8 50%, #a8b8e0 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .subtitle {
+    text-align: center;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    line-height: 1.7;
+    margin-bottom: 28px;
+  }
+
+  .feat-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 28px;
+  }
+  .feat-item {
+    background: rgba(255,255,255,0.02);
+    border: 1px solid rgba(255,255,255,0.04);
+    border-radius: var(--radius-sm);
+    padding: 14px;
+    text-align: center;
+    transition: var(--transition);
+  }
+  .feat-item .fi-icon { font-size: 1.4rem; margin-bottom: 4px; }
+  .feat-item .fi-label { font-size: 0.78rem; color: var(--text-secondary); }
+
+  .btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    padding: 15px 24px;
+    border: none;
+    border-radius: var(--radius-sm);
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+    letter-spacing: 0.3px;
+    transition: var(--transition);
+    position: relative;
+    overflow: hidden;
+  }
+  .btn-primary {
+    background: linear-gradient(135deg, var(--accent-1), var(--accent-2));
+    color: #fff;
+    box-shadow: 0 8px 30px rgba(0,180,255,0.25);
+  }
+  .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 14px 40px rgba(0,180,255,0.35); }
+  .btn-primary:active { transform: scale(0.98); }
+  .btn-secondary {
+    background: rgba(255,255,255,0.05);
+    color: #ccc;
+    border: 1px solid rgba(255,255,255,0.1);
+  }
+  .btn-sm { padding: 10px 20px; font-size: 0.85rem; }
+
+  /* Quiz screen */
+  .quiz-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+  }
+  .quiz-qnum {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--accent-1);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+  .quiz-dim {
+    font-size: 0.72rem;
+    color: var(--text-secondary);
+    background: rgba(255,255,255,0.04);
+    padding: 4px 10px;
+    border-radius: 20px;
+  }
+
+  .progress-wrap { margin-bottom: 24px; }
+  .progress-track {
+    height: 4px;
+    background: rgba(255,255,255,0.06);
+    border-radius: 2px;
+    overflow: hidden;
+    position: relative;
+  }
+  .progress-fill {
+    height: 100%;
+    border-radius: 2px;
+    background: linear-gradient(90deg, var(--accent-1), var(--accent-2), var(--accent-3));
+    background-size: 200% 100%;
+    animation: shimmer 2s ease infinite;
+    transition: width 0.5s ease;
+  }
+  @keyframes shimmer {
+    0%, 100% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+  }
+  .progress-text {
+    text-align: right;
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    margin-top: 6px;
+  }
+
+  .q-text {
+    font-size: 1.15rem;
+    font-weight: 500;
+    line-height: 1.65;
+    margin-bottom: 24px;
+    min-height: 60px;
+  }
+
+  .scale-group {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 24px;
+  }
+  .scale-btn {
+    flex: 1;
+    padding: 14px 6px;
+    background: rgba(255,255,255,0.025);
+    border: 2px solid rgba(255,255,255,0.06);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    text-align: center;
+    font-size: 0.78rem;
+    color: var(--text-secondary);
+    transition: var(--transition);
+    font-family: inherit;
+    line-height: 1.3;
+    min-height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .scale-btn:hover { background: rgba(255,255,255,0.05); border-color: rgba(255,255,255,0.14); }
+  .scale-btn.selected {
+    background: rgba(0,212,255,0.1);
+    border-color: var(--accent-1);
+    color: #fff;
+    box-shadow: 0 0 24px rgba(0,212,255,0.1);
+  }
+
+  .nav-row {
+    display: flex;
+    gap: 10px;
+  }
+  .nav-row .btn { flex: 1; }
+
+  /* Analyzing screen */
+  .analyze-content {
+    text-align: center;
+    padding: 40px 0;
+  }
+  .analyze-ring {
+    width: 80px; height: 80px;
+    margin: 0 auto 24px;
+    position: relative;
+  }
+  .analyze-ring svg { animation: spin 2s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .analyze-ring .ar-icon {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 28px;
+  }
+  .analyze-text {
+    font-size: 1rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+  }
+  .analyze-dots { display: inline-block; width: 24px; text-align: left; }
+
+  /* Result screen */
+  .result-header {
+    text-align: center;
+    margin-bottom: 28px;
+  }
+  .result-type-tag {
+    display: inline-block;
+    font-size: 0.75rem;
+    letter-spacing: 2px;
+    color: var(--accent-1);
+    background: rgba(0,212,255,0.08);
+    padding: 5px 14px;
+    border-radius: 20px;
+    margin-bottom: 12px;
+    text-transform: uppercase;
+  }
+  .result-title {
+    font-size: 1.6rem;
+    font-weight: 700;
+    margin-bottom: 6px;
+  }
+  .result-subtitle {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    line-height: 1.6;
+  }
+
+  /* Radar */
+  .radar-wrap {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 28px;
+  }
+  .radar-wrap svg { max-width: 280px; width: 100%; }
+
+  /* Dimension details */
+  .dim-section { margin-bottom: 24px; }
+  .dim-section h3 {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 14px;
+  }
+  .dim-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 10px;
+  }
+  .dim-icon {
+    width: 36px; height: 36px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    flex-shrink: 0;
+  }
+  .dim-info { flex: 1; min-width: 0; }
+  .dim-name { font-size: 0.88rem; font-weight: 500; margin-bottom: 2px; }
+  .dim-desc { font-size: 0.72rem; color: var(--text-secondary); }
+  .dim-score {
+    font-size: 1.2rem;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    flex-shrink: 0;
+  }
+  .dim-bar-track {
+    height: 4px;
+    background: rgba(255,255,255,0.06);
+    border-radius: 2px;
+    margin-top: 6px;
+    overflow: hidden;
+  }
+  .dim-bar-fill {
+    height: 100%;
+    border-radius: 2px;
+    transition: width 1.2s ease;
+  }
+
+  /* Career matches */
+  .careers-title {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 14px;
+  }
+  .career-card {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    background: rgba(255,255,255,0.02);
+    border: 1px solid rgba(255,255,255,0.04);
+    border-radius: var(--radius-sm);
+    padding: 16px;
+    margin-bottom: 8px;
+    transition: var(--transition);
+  }
+  .career-rank {
+    width: 28px; height: 28px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+  .career-rank.top { background: rgba(0,229,160,0.12); color: var(--accent-4); }
+  .career-rank.mid { background: rgba(255,179,71,0.12); color: var(--accent-5); }
+  .career-rank.low { background: rgba(255,255,255,0.04); color: var(--text-secondary); }
+  .career-info { flex: 1; min-width: 0; }
+  .career-name { font-size: 0.92rem; font-weight: 600; }
+  .career-roles { font-size: 0.72rem; color: var(--text-secondary); margin-top: 2px; }
+  .career-match {
+    font-size: 1.1rem;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+  .career-match.high { color: var(--accent-4); }
+  .career-match.good { color: var(--accent-5); }
+  .career-match.ok { color: var(--text-secondary); }
+
+  .restart-btn {
+    margin-top: 24px;
+  }
+
+  /* Responsive */
+  @media (max-width: 480px) {
+    .card { padding: 24px 18px; border-radius: var(--radius-sm); }
+    .title { font-size: 1.5rem; }
+    .q-text { font-size: 1rem; }
+    .scale-group { gap: 5px; }
+    .scale-btn { padding: 12px 3px; font-size: 0.7rem; min-height: 52px; }
+    .feat-grid { gap: 6px; }
+    .feat-item { padding: 10px 6px; }
+    .feat-item .fi-label { font-size: 0.7rem; }
+    .analyze-content { padding: 28px 0; }
+    .result-title { font-size: 1.3rem; }
+  }
+
+  @media (min-width: 768px) {
+    .scale-btn { padding: 16px 10px; font-size: 0.82rem; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Ambient background -->
+<div class="bg-ambient">
+  <div class="bg-orb"></div>
+  <div class="bg-orb"></div>
+  <div class="bg-orb"></div>
+</div>
+<div class="bg-grid"></div>
+<canvas id="particles"></canvas>
+
+<!-- App -->
+<div class="app" id="app">
+
+  <!-- Welcome -->
+  <div class="screen active" id="screen-welcome">
+    <div class="card">
+      <div class="welcome-icon">🧬</div>
+      <h1 class="title">AI 职业人格测试</h1>
+      <p class="subtitle">基于五维职业人格模型，通过 40 道精选题目<br>深度分析你的职业倾向，智能匹配理想职业方向</p>
+      <div class="feat-grid">
+        <div class="feat-item"><div class="fi-icon">🔬</div><div class="fi-label">五维深度分析</div></div>
+        <div class="feat-item"><div class="fi-icon">🤖</div><div class="fi-label">AI 智能匹配</div></div>
+        <div class="feat-item"><div class="fi-icon">📊</div><div class="fi-label">40 道精选题</div></div>
+        <div class="feat-item"><div class="fi-icon">🎯</div><div class="fi-label">20+ 职业推荐</div></div>
+      </div>
+      <button class="btn btn-primary" onclick="startQuiz()">
+        <span>开始测试</span>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+      </button>
+      <p style="text-align:center;font-size:0.7rem;color:var(--text-secondary);margin-top:12px;">约需 5-8 分钟 · 所有数据仅在本地处理</p>
+    </div>
+  </div>
+
+  <!-- Quiz -->
+  <div class="screen" id="screen-quiz">
+    <div class="card">
+      <div class="quiz-header">
+        <span class="quiz-qnum" id="quiz-qnum">第 1 题</span>
+        <span class="quiz-dim" id="quiz-dim"></span>
+      </div>
+      <div class="progress-wrap">
+        <div class="progress-track"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
+        <div class="progress-text" id="progress-text">0 / 40</div>
+      </div>
+      <div class="q-text" id="q-text"></div>
+      <div class="scale-group" id="scale-group"></div>
+      <div class="nav-row">
+        <button class="btn btn-secondary btn-sm" id="btn-prev" onclick="prevQ()">上一题</button>
+        <button class="btn btn-primary btn-sm" id="btn-next" onclick="nextQ()" disabled>下一题</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Analyzing -->
+  <div class="screen" id="screen-analyzing">
+    <div class="card">
+      <div class="analyze-content">
+        <div class="analyze-ring">
+          <svg width="80" height="80" viewBox="0 0 80 80">
+            <circle cx="40" cy="40" r="34" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="4"/>
+            <circle cx="40" cy="40" r="34" fill="none" stroke="url(#analyzeGrad)" stroke-width="4" stroke-dasharray="160 54" stroke-linecap="round"/>
+            <defs><linearGradient id="analyzeGrad" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#00d4ff"/><stop offset="100%" stop-color="#7b5cff"/></linearGradient></defs>
+          </svg>
+          <div class="ar-icon">🧠</div>
+        </div>
+        <p class="analyze-text">AI 正在分析您的职业人格<span class="analyze-dots"></span></p>
+        <p style="font-size:0.72rem;color:var(--text-secondary);margin-top:8px;">深度解析 5 个维度 · 匹配 20+ 职业方向</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Result -->
+  <div class="screen" id="screen-result">
+    <div class="card" id="result-card"></div>
+  </div>
+
+</div>
+
+<script>
+// ─── Particles ──────────────────────────────
+(() => {
+  const c = document.getElementById('particles');
+  const ctx = c.getContext('2d');
+  let w, h, pts = [];
+  const N = 60;
+
+  function resize() {
+    w = c.width = window.innerWidth;
+    h = c.height = window.innerHeight;
+  }
+  resize();
+  window.addEventListener('resize', resize);
+
+  for (let i = 0; i < N; i++) {
+    pts.push({
+      x: Math.random() * w, y: Math.random() * h,
+      vx: (Math.random() - 0.5) * 0.3,
+      vy: (Math.random() - 0.5) * 0.3,
+      r: Math.random() * 1.5 + 0.5,
+      o: Math.random() * 0.5 + 0.2,
+    });
+  }
+
+  function draw() {
+    ctx.clearRect(0, 0, w, h);
+    for (const p of pts) {
+      p.x += p.vx; p.y += p.vy;
+      if (p.x < 0) p.x = w; if (p.x > w) p.x = 0;
+      if (p.y < 0) p.y = h; if (p.y > h) p.y = 0;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(255,255,255,${p.o})`;
+      ctx.fill();
+    }
+    // Lines between nearby particles
+    for (let i = 0; i < N; i++) {
+      for (let j = i + 1; j < N; j++) {
+        const dx = pts[i].x - pts[j].x, dy = pts[i].y - pts[j].y;
+        const d = Math.sqrt(dx * dx + dy * dy);
+        if (d < 120) {
+          ctx.beginPath();
+          ctx.moveTo(pts[i].x, pts[i].y);
+          ctx.lineTo(pts[j].x, pts[j].y);
+          ctx.strokeStyle = `rgba(255,255,255,${0.04 * (1 - d / 120)})`;
+          ctx.stroke();
+        }
+      }
+    }
+    requestAnimationFrame(draw);
+  }
+  draw();
+})();
+
+// ─── Data ───────────────────────────────────
+const dimensions = [
+  { key: 'analytical', name: '分析力', icon: '🔬', desc: '逻辑推理与数据处理能力', color: '#00d4ff' },
+  { key: 'creative', name: '创造力', icon: '💡', desc: '创新思维与艺术表达能力', color: '#ff4785' },
+  { key: 'leadership', name: '领导力', icon: '🚀', desc: '决策魄力与团队影响力', color: '#ffb347' },
+  { key: 'collaboration', name: '协作力', icon: '🤝', desc: '共情能力与团队合作精神', color: '#00e5a0' },
+  { key: 'execution', name: '执行力', icon: '⚡', desc: '计划组织与目标达成能力', color: '#7b5cff' },
+];
+
+const questions = [
+  // 分析力 (8)
+  { text: "面对复杂问题时，我会主动收集数据并进行系统性分析", dim: 'analytical' },
+  { text: "我擅长在大量信息中发现隐藏的模式和规律", dim: 'analytical' },
+  { text: "做决定时，我更依赖逻辑推理而非直觉感受", dim: 'analytical' },
+  { text: "我喜欢解决需要深度思考的抽象难题", dim: 'analytical' },
+  { text: "面对争议，我会用事实和数据来支撑自己的观点", dim: 'analytical' },
+  { text: "我对事物背后的运作原理和机制充满好奇", dim: 'analytical' },
+  { text: "我能长时间保持专注，深入分析一个复杂问题", dim: 'analytical' },
+  { text: "做重要决策时，我会列出详细的利弊分析清单", dim: 'analytical' },
+  // 创造力 (8)
+  { text: "我经常产生与众不同的新颖想法", dim: 'creative' },
+  { text: "我喜欢打破常规，尝试用新方法解决问题", dim: 'creative' },
+  { text: "我对艺术、设计或创意表达有浓厚兴趣", dim: 'creative' },
+  { text: "我能从别人忽视的角度发现机会和可能性", dim: 'creative' },
+  { text: "我不喜欢被既有流程束缚，喜欢自由探索", dim: 'creative' },
+  { text: "在头脑风暴中，我通常是点子最多的那个人", dim: 'creative' },
+  { text: "我经常思考'如果...会怎样'的假设性问题", dim: 'creative' },
+  { text: "相比于重复性工作，我更喜欢需要想象力的任务", dim: 'creative' },
+  // 领导力 (8)
+  { text: "在团队项目中，我往往会自然地承担领导角色", dim: 'leadership' },
+  { text: "我善于激励他人，帮助团队成员发挥潜力", dim: 'leadership' },
+  { text: "面对压力和不确定性，我仍能果断做出决策", dim: 'leadership' },
+  { text: "我乐于为自己的想法争取支持并说服他人", dim: 'leadership' },
+  { text: "在公开场合演讲或表达观点让我感到兴奋", dim: 'leadership' },
+  { text: "我愿意承担团队成败的最终责任", dim: 'leadership' },
+  { text: "我善于分配任务和协调资源来达成目标", dim: 'leadership' },
+  { text: "即使面对强烈反对，我也能坚持自己的判断", dim: 'leadership' },
+  // 协作力 (8)
+  { text: "我乐于帮助同事或朋友解决他们遇到的困难", dim: 'collaboration' },
+  { text: "我善于倾听，能够真正理解他人的想法和感受", dim: 'collaboration' },
+  { text: "团队和谐融洽对我来说比个人成就更重要", dim: 'collaboration' },
+  { text: "我能快速适应不同风格的团队和工作环境", dim: 'collaboration' },
+  { text: "在团队冲突中，我善于寻找各方都能接受的方案", dim: 'collaboration' },
+  { text: "与他人合作完成项目比独自完成更让我有成就感", dim: 'collaboration' },
+  { text: "我能敏锐地察觉到身边人的情绪变化", dim: 'collaboration' },
+  { text: "我享受在多元化背景的团队中工作", dim: 'collaboration' },
+  // 执行力 (8)
+  { text: "我喜欢制定详细的计划然后严格执行", dim: 'execution' },
+  { text: "有明确截止日期的工作让我更有动力", dim: 'execution' },
+  { text: "我能够高效管理时间，很少拖延重要任务", dim: 'execution' },
+  { text: "一旦开始一个项目，我就会坚持把它做到最好", dim: 'execution' },
+  { text: "我注重细节，追求高标准的工作成果", dim: 'execution' },
+  { text: "我习惯每天列出待办清单并按优先级完成", dim: 'execution' },
+  { text: "我对自己的承诺非常负责，说到一定做到", dim: 'execution' },
+  { text: "在结构化和有明确规则的环境中，我表现得更好", dim: 'execution' },
+];
+
+const careers = [
+  { name: '数据科学家', roles: '数据分析师 · AI工程师 · 商业智能', scores: { analytical:4.8, creative:3.2, leadership:2.0, collaboration:2.8, execution:3.8 } },
+  { name: '软件工程师', roles: '全栈开发 · 系统架构师 · 技术专家', scores: { analytical:4.5, creative:3.0, leadership:2.0, collaboration:3.2, execution:3.8 } },
+  { name: '产品经理', roles: '产品总监 · 策略规划 · 用户增长', scores: { analytical:3.5, creative:4.0, leadership:4.2, collaboration:4.5, execution:4.0 } },
+  { name: 'UX/UI 设计师', roles: '交互设计 · 视觉设计 · 用户体验', scores: { analytical:3.0, creative:4.8, leadership:2.0, collaboration:3.5, execution:3.2 } },
+  { name: '企业家 / 创始人', roles: 'CEO · 创业合伙人 · 业务负责人', scores: { analytical:3.2, creative:4.2, leadership:5.0, collaboration:3.5, execution:4.0 } },
+  { name: '管理咨询顾问', roles: '战略咨询 · 组织变革 · 流程优化', scores: { analytical:4.2, creative:3.2, leadership:4.0, collaboration:4.0, execution:4.0 } },
+  { name: '市场营销专家', roles: '品牌策划 · 数字营销 · 内容运营', scores: { analytical:2.5, creative:4.5, leadership:3.2, collaboration:4.0, execution:3.2 } },
+  { name: '人力资源总监', roles: 'HRBP · 人才发展 · 组织文化', scores: { analytical:2.5, creative:2.5, leadership:3.2, collaboration:5.0, execution:4.0 } },
+  { name: '教师 / 教授', roles: '教育工作者 · 培训师 · 课程设计', scores: { analytical:3.0, creative:3.5, leadership:3.2, collaboration:4.8, execution:3.8 } },
+  { name: '医生 / 外科医生', roles: '临床医师 · 医学研究 · 公共卫生', scores: { analytical:4.0, creative:2.0, leadership:3.0, collaboration:4.0, execution:5.0 } },
+  { name: '律师 / 法务', roles: '诉讼律师 · 公司法务 · 合规顾问', scores: { analytical:4.8, creative:2.0, leadership:4.0, collaboration:2.2, execution:4.8 } },
+  { name: '记者 / 媒体人', roles: '调查记者 · 编辑 · 内容制作', scores: { analytical:3.2, creative:4.2, leadership:2.8, collaboration:4.0, execution:3.2 } },
+  { name: '心理咨询师', roles: '临床心理 · 职业咨询 · 社工', scores: { analytical:3.2, creative:2.5, leadership:2.0, collaboration:5.0, execution:3.2 } },
+  { name: '金融分析师', roles: '投资分析 · 风险管理 · 量化研究', scores: { analytical:4.8, creative:1.8, leadership:2.2, collaboration:2.2, execution:4.5 } },
+  { name: '建筑师', roles: '建筑设计 · 城市规划 · 室内设计', scores: { analytical:4.0, creative:4.8, leadership:2.8, collaboration:3.2, execution:4.2 } },
+  { name: '销售总监', roles: '大客户销售 · 渠道管理 · 商务拓展', scores: { analytical:2.5, creative:3.0, leadership:4.8, collaboration:4.2, execution:4.0 } },
+  { name: '科研人员', roles: '研究员 · 实验室主任 · 学术导师', scores: { analytical:5.0, creative:3.8, leadership:1.5, collaboration:2.2, execution:3.8 } },
+  { name: '作家 / 编剧', roles: '小说家 · 编剧 · 内容创作者', scores: { analytical:2.5, creative:5.0, leadership:1.5, collaboration:1.8, execution:2.8 } },
+  { name: '项目经理', roles: 'PMO · 敏捷教练 · 交付负责人', scores: { analytical:3.2, creative:2.2, leadership:4.2, collaboration:4.2, execution:5.0 } },
+  { name: '公务员', roles: '行政管理 · 政策研究 · 公共服务', scores: { analytical:2.5, creative:1.5, leadership:2.5, collaboration:4.0, execution:4.5 } },
+  { name: 'AI / 算法工程师', roles: '深度学习 · NLP · 计算机视觉', scores: { analytical:5.0, creative:3.5, leadership:1.8, collaboration:2.5, execution:3.5 } },
+  { name: '导演 / 影视制作', roles: '电影导演 · 制片人 · 视频创作', scores: { analytical:3.0, creative:5.0, leadership:4.2, collaboration:4.0, execution:3.5 } },
+  { name: '职业运动员', roles: '竞技体育 · 教练 · 体育管理', scores: { analytical:2.0, creative:2.5, leadership:3.0, collaboration:3.8, execution:5.0 } },
+];
+
+// Shuffle questions
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+const shuffledQuestions = shuffle(questions);
+
+const scaleLabels = ['完全不符合', '不太符合', '一般', '比较符合', '非常符合'];
+
+// ─── State ──────────────────────────────────
+let currentQ = 0;
+let answers = new Array(shuffledQuestions.length).fill(0);
+const totalQ = shuffledQuestions.length;
+
+// ─── Screen switching ─────────────────────
+let dotsTimer = null;
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  const el = document.getElementById(id);
+  el.classList.add('active');
+  const card = el.querySelector('.card');
+  if (card) { card.style.animation = 'none'; card.offsetHeight; card.style.animation = ''; }
+
+  // Animate analyzing dots
+  if (dotsTimer) clearInterval(dotsTimer);
+  if (id === 'screen-analyzing') {
+    const dots = el.querySelector('.analyze-dots');
+    if (dots) {
+      let n = 0;
+      dotsTimer = setInterval(() => { n = (n + 1) % 4; dots.textContent = '.'.repeat(n); }, 400);
+    }
+  }
+}
+
+// ─── Quiz ──────────────────────────────────
+function startQuiz() {
+  currentQ = 0;
+  answers = new Array(shuffledQuestions.length).fill(0);
+  showScreen('screen-quiz');
+  renderQ();
+}
+
+function renderQ() {
+  const q = shuffledQuestions[currentQ];
+  document.getElementById('quiz-qnum').textContent = `第 ${currentQ + 1} 题`;
+  const dim = dimensions.find(d => d.key === q.dim);
+  document.getElementById('quiz-dim').textContent = dim.icon + ' ' + dim.name;
+  document.getElementById('q-text').textContent = q.text;
+  document.getElementById('progress-text').textContent = `${currentQ + 1} / ${totalQ}`;
+  document.getElementById('progress-fill').style.width = `${((currentQ + 1) / totalQ) * 100}%`;
+
+  const group = document.getElementById('scale-group');
+  group.innerHTML = '';
+  scaleLabels.forEach((label, i) => {
+    const val = i + 1;
+    const btn = document.createElement('button');
+    btn.className = 'scale-btn';
+    if (answers[currentQ] === val) btn.classList.add('selected');
+    btn.textContent = label;
+    btn.onclick = () => {
+      answers[currentQ] = val;
+      group.querySelectorAll('.scale-btn').forEach(b => b.classList.remove('selected'));
+      btn.classList.add('selected');
+      document.getElementById('btn-next').disabled = false;
+    };
+    group.appendChild(btn);
+  });
+
+  document.getElementById('btn-prev').style.visibility = currentQ === 0 ? 'hidden' : 'visible';
+  const nextBtn = document.getElementById('btn-next');
+  nextBtn.disabled = answers[currentQ] === 0;
+  nextBtn.textContent = currentQ === totalQ - 1 ? '查看结果' : '下一题';
+}
+
+function nextQ() {
+  if (answers[currentQ] === 0) return;
+  if (currentQ === totalQ - 1) {
+    showScreen('screen-analyzing');
+    setTimeout(showResult, 2200);
+  } else {
+    currentQ++;
+    renderQ();
+  }
+}
+
+function prevQ() {
+  if (currentQ > 0) { currentQ--; renderQ(); }
+}
+
+// ─── Results ───────────────────────────────
+function showResult() {
+  // Calculate scores
+  const raw = {};
+  const counts = {};
+  dimensions.forEach(d => { raw[d.key] = 0; counts[d.key] = 0; });
+
+  shuffledQuestions.forEach((q, i) => {
+    if (answers[i] > 0) {
+      raw[q.dim] += answers[i];
+      counts[q.dim]++;
+    }
+  });
+
+  // Normalize to 1-5
+  const userScores = {};
+  dimensions.forEach(d => {
+    userScores[d.key] = counts[d.key] > 0 ? +(raw[d.key] / counts[d.key]).toFixed(1) : 3.0;
+  });
+
+  // Determine type
+  const sorted = [...dimensions].sort((a, b) => userScores[b.key] - userScores[a.key]);
+  const top2 = sorted.slice(0, 2).map(d => d.name).join('型 + ');
+  const typeName = top2 + '型';
+
+  // Generate type description
+  const highest = sorted[0];
+  const lowest = sorted[4];
+  let typeDesc = `你是一位典型的"${sorted[0].name}驱动"型人才，${sorted[0].desc.split('与')[0]}。`;
+  if (userScores[highest.key] >= 4) {
+    typeDesc += `你的${highest.name}表现非常突出，这是你最核心的职业竞争力。`;
+  }
+  typeDesc += `同时，你的${lowest.name}相对较低，这定义了你的工作偏好——${lowest.desc.split('与')[0]}对你来说可能不是自然的舒适区。`;
+
+  // Career matching
+  function euclidean(a, b) {
+    let sum = 0;
+    for (const k in a) sum += (a[k] - b[k]) ** 2;
+    return Math.sqrt(sum);
+  }
+  const maxDist = Math.sqrt(5 * 4 * 4); // ≈ 8.944
+  const matches = careers.map(c => {
+    const dist = euclidean(userScores, c.scores);
+    const pct = Math.round((1 - dist / maxDist) * 100);
+    return { ...c, match: Math.max(0, Math.min(100, pct)) };
+  }).sort((a, b) => b.match - a.match);
+
+  const top5 = matches.slice(0, 5);
+
+  // Build result HTML
+  const card = document.getElementById('result-card');
+  card.innerHTML = `
+    <div class="result-header">
+      <div class="result-type-tag">YOUR CAREER ARCHETYPE</div>
+      <div class="result-title">${typeName}</div>
+      <div class="result-subtitle">${typeDesc}</div>
+    </div>
+
+    <div class="radar-wrap">
+      <svg viewBox="0 0 300 300" id="radar-svg">
+        <!-- Grid -->
+        ${[1,2,3,4,5].map(lvl => {
+          const r = 25 + lvl * 23;
+          const pts = [270,342,54,126,198].map(a => {
+            const rad = a * Math.PI / 180;
+            return `${130 + r * Math.cos(rad)},${150 + r * Math.sin(rad)}`;
+          }).join(' ');
+          return `<polygon points="${pts}" fill="none" stroke="rgba(255,255,255,${lvl===5?0.12:0.04})" stroke-width="1"/>`;
+        }).join('')}
+        <!-- Axes -->
+        ${[270,342,54,126,198].map(a => {
+          const rad = a * Math.PI / 180;
+          return `<line x1="130" y1="150" x2="${130+140*Math.cos(rad)}" y2="${150+140*Math.sin(rad)}" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>`;
+        }).join('')}
+        <!-- Labels -->
+        ${dimensions.map((d, i) => {
+          const a = [270,342,54,126,198][i];
+          const rad = a * Math.PI / 180;
+          const lx = 130 + 158 * Math.cos(rad);
+          const ly = 150 + 158 * Math.sin(rad);
+          const score = userScores[d.key];
+          return `<text x="${lx}" y="${ly}" text-anchor="middle" dominant-baseline="middle" fill="${d.color}" font-size="11" font-weight="600">${d.icon} ${score}</text>`;
+        }).join('')}
+        <!-- User polygon -->
+        <polygon points="${dimensions.map((d, i) => {
+          const a = [90,162,234,306,18][i];
+          const r = 25 + userScores[d.key] * 23;
+          const rad = (a - 90) * Math.PI / 180;
+          return `${(130 + r * Math.cos(rad)).toFixed(1)},${(150 + r * Math.sin(rad)).toFixed(1)}`;
+        }).join(' ')}" fill="rgba(0,212,255,0.15)" stroke="var(--accent-1)" stroke-width="2" stroke-linejoin="round"/>
+        <!-- Dots -->
+        ${dimensions.map((d, i) => {
+          const a = [90,162,234,306,18][i];
+          const r = 25 + userScores[d.key] * 23;
+          const rad = (a - 90) * Math.PI / 180;
+          return `<circle cx="${(130 + r * Math.cos(rad)).toFixed(1)}" cy="${(150 + r * Math.sin(rad)).toFixed(1)}" r="4" fill="${d.color}" stroke="#fff" stroke-width="1.5"/>`;
+        }).join('')}
+        <circle cx="130" cy="150" r="3" fill="rgba(255,255,255,0.3)"/>
+      </svg>
+    </div>
+
+    <div class="dim-section">
+      <h3>五维分析</h3>
+      ${dimensions.map(d => `
+        <div class="dim-row">
+          <div class="dim-icon" style="background:${d.color}22;color:${d.color}">${d.icon}</div>
+          <div class="dim-info">
+            <div class="dim-name">${d.name}</div>
+            <div class="dim-desc">${d.desc}</div>
+            <div class="dim-bar-track"><div class="dim-bar-fill" style="width:${(userScores[d.key]/5)*100}%;background:${d.color};transition-delay:${dimensions.indexOf(d)*0.1}s"></div></div>
+          </div>
+          <div class="dim-score" style="color:${d.color}">${userScores[d.key]}<span style="font-size:0.6rem;font-weight:400">/5</span></div>
+        </div>
+      `).join('')}
+    </div>
+
+    <div class="careers-title">🏆 职业匹配 TOP 5</div>
+    ${top5.map((c, i) => {
+      const rankClass = i < 2 ? 'top' : (i < 4 ? 'mid' : 'low');
+      const matchClass = c.match >= 90 ? 'high' : (c.match >= 75 ? 'good' : 'ok');
+      return `
+        <div class="career-card">
+          <div class="career-rank ${rankClass}">${i + 1}</div>
+          <div class="career-info">
+            <div class="career-name">${c.name}</div>
+            <div class="career-roles">${c.roles}</div>
+          </div>
+          <div class="career-match ${matchClass}">${c.match}%</div>
+        </div>
+      `;
+    }).join('')}
+
+    <div style="margin-top:20px;padding:16px;background:rgba(255,255,255,0.015);border-radius:12px;border:1px solid rgba(255,255,255,0.04);">
+      <p style="font-size:0.78rem;color:var(--text-secondary);line-height:1.7;text-align:center;">
+        💡 <strong>提示：</strong>以上结果基于你的答题数据分析得出。职业选择是多维度的，建议结合个人兴趣、价值观和发展规划综合考量。测试结果仅供参考。
+      </p>
+    </div>
+
+    <button class="btn btn-primary restart-btn" onclick="restart()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M1 4v6h6M23 20v-6h-6"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"/></svg>
+      重新测试
+    </button>
+  `;
+
+  showScreen('screen-result');
+
+  // Animate bars
+  setTimeout(() => {
+    card.querySelectorAll('.dim-bar-fill').forEach(el => {
+      el.style.width = el.style.width;
+    });
+  }, 200);
+}
+
+function restart() {
+  showScreen('screen-welcome');
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>简历模板 - 现代科技风</title>
+<style>
+  :root { --primary: #1a73e8; --dark: #1a1a2e; --text: #333; --light: #666; --bg: #fff; }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'PingFang SC', 'Microsoft YaHei', 'Segoe UI', sans-serif;
+    background: #e8ecf1; display: flex; justify-content: center;
+    padding: 30px 16px; color: var(--text); line-height: 1.65;
+  }
+
+  .toolbar {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 10;
+    background: #1a1a2e; color: #fff; display: flex; align-items: center;
+    justify-content: center; gap: 16px; padding: 8px 16px; font-size: 0.82rem;
+  }
+  .toolbar button {
+    padding: 6px 16px; border: none; border-radius: 6px; cursor: pointer;
+    font-size: 0.82rem; font-weight: 600;
+  }
+  .btn-print { background: #4a90ff; color: #fff; }
+  .btn-tip { background: rgba(255,255,255,0.15); color: #fff; }
+
+  .page {
+    width: 210mm; min-height: 297mm; background: var(--bg);
+    box-shadow: 0 4px 24px rgba(0,0,0,0.12); margin-top: 36px;
+    display: grid; grid-template-columns: 170px 1fr;
+  }
+
+  /* Sidebar */
+  .sidebar {
+    background: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%);
+    color: #e0e0e0; padding: 24px 18px 20px;
+  }
+  .side-avatar {
+    width: 80px; height: 80px; border-radius: 50%; margin: 0 auto 14px;
+    background: rgba(255,255,255,0.1); display: flex; align-items: center;
+    justify-content: center; font-size: 2rem; border: 3px solid rgba(255,255,255,0.15);
+  }
+  .side-name {
+    text-align: center; font-size: 1.2rem; font-weight: 700; margin-bottom: 2px;
+    border: none; outline: none; background: transparent; color: #fff; width: 100%;
+  }
+  .side-role {
+    text-align: center; font-size: 0.72rem; color: #8ab4f8; margin-bottom: 18px;
+    border: none; outline: none; background: transparent; color: #8ab4f8; width: 100%;
+  }
+  .side-section { margin-bottom: 16px; }
+  .side-title {
+    font-size: 0.7rem; font-weight: 700; letter-spacing: 2px;
+    text-transform: uppercase; color: #8ab4f8; margin-bottom: 8px;
+    padding-bottom: 4px; border-bottom: 1px solid rgba(255,255,255,0.1);
+  }
+  .side-item { font-size: 0.72rem; margin-bottom: 6px; line-height: 1.5; }
+  .side-item span { display: block; color: #999; font-size: 0.65rem; }
+  .side-tags { display: flex; flex-wrap: wrap; gap: 4px; }
+  .side-tag {
+    font-size: 0.65rem; padding: 2px 8px; background: rgba(255,255,255,0.08);
+    border-radius: 3px;
+  }
+
+  /* Main */
+  .main { padding: 24px 22px 20px; }
+  .main-section { margin-bottom: 18px; }
+  .main-title {
+    font-size: 0.82rem; font-weight: 700; color: var(--primary); letter-spacing: 1px;
+    text-transform: uppercase; margin-bottom: 12px; padding-bottom: 4px;
+    border-bottom: 2px solid var(--primary); display: flex; align-items: center; gap: 6px;
+  }
+  .entry { margin-bottom: 12px; }
+  .entry-row { display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; }
+  .entry-title { font-weight: 600; font-size: 0.88rem; }
+  .entry-sub { font-size: 0.76rem; color: var(--primary); font-weight: 500; }
+  .entry-date { font-size: 0.72rem; color: #999; white-space: nowrap; }
+  .entry-list { margin-top: 4px; padding-left: 16px; }
+  .entry-list li { font-size: 0.78rem; color: var(--light); margin-bottom: 3px; }
+
+  .summary-text { font-size: 0.82rem; color: var(--light); line-height: 1.7; }
+
+  [contenteditable]:focus { outline: 2px dashed rgba(26,115,232,0.2); outline-offset: 2px; }
+
+  @media print {
+    @page { size: A4; margin: 0; }
+    body { background: #fff; padding: 0; }
+    .toolbar { display: none !important; }
+    .page { box-shadow: none; margin: 0; width: 100%; min-height: auto; }
+    [contenteditable]:focus { outline: none; }
+  }
+
+  @media (max-width: 800px) {
+    .page { grid-template-columns: 1fr; width: 100%; min-height: auto; }
+    .sidebar { display: grid; grid-template-columns: auto 1fr; gap: 10px 20px; align-items: start; padding: 18px; }
+    .side-avatar { width: 50px; height: 50px; margin: 0; font-size: 1.5rem; }
+    .side-section { margin-bottom: 8px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="toolbar">
+  <span>📝 点击任意文字直接修改</span>
+  <button class="btn-print" onclick="window.print()">🖨️ 导出 PDF</button>
+  <button class="btn-tip" onclick="alert('💡 填写提示：\n\n1. 左侧栏放个人信息和技能\n2. 右侧正文放经历和项目\n3. 技术栈技能用标签展示\n4. 项目经验突出技术方案和量化成果')">💡 填写提示</button>
+</div>
+
+<div class="page">
+
+  <div class="sidebar">
+    <div class="side-avatar">👨‍💻</div>
+    <div class="side-name" contenteditable="true">李 四</div>
+    <div class="side-role" contenteditable="true" style="color:#8ab4f8">全栈开发工程师</div>
+
+    <div class="side-section">
+      <div class="side-title">联系方式</div>
+      <div class="side-item" contenteditable="true">📧 dev@email.com</div>
+      <div class="side-item" contenteditable="true">📱 139-0000-0000</div>
+      <div class="side-item" contenteditable="true">📍 北京市朝阳区</div>
+      <div class="side-item" contenteditable="true">🔗 github.com/dev</div>
+      <div class="side-item" contenteditable="true">🌐 blog.dev.com</div>
+    </div>
+
+    <div class="side-section">
+      <div class="side-title">技术栈</div>
+      <div class="side-tags">
+        <span class="side-tag" contenteditable="true">React</span>
+        <span class="side-tag" contenteditable="true">TypeScript</span>
+        <span class="side-tag" contenteditable="true">Node.js</span>
+        <span class="side-tag" contenteditable="true">Python</span>
+        <span class="side-tag" contenteditable="true">PostgreSQL</span>
+        <span class="side-tag" contenteditable="true">AWS</span>
+        <span class="side-tag" contenteditable="true">Docker</span>
+        <span class="side-tag" contenteditable="true">Redis</span>
+      </div>
+    </div>
+
+    <div class="side-section">
+      <div class="side-title">语言能力</div>
+      <div class="side-item" contenteditable="true">英语 CET-6（流利读写）</div>
+      <div class="side-item" contenteditable="true">普通话二级甲等</div>
+    </div>
+
+    <div class="side-section">
+      <div class="side-title">证书</div>
+      <div class="side-item" contenteditable="true">AWS Solutions Architect</div>
+      <div class="side-item" contenteditable="true">PMP 项目管理认证</div>
+    </div>
+  </div>
+
+  <div class="main">
+
+    <!-- 个人概述 -->
+    <div class="main-section">
+      <div class="main-title">📋 个人概述</div>
+      <div class="summary-text" contenteditable="true">5 年全栈开发经验，主导过日活 100 万+ 的 Web 应用架构设计与性能优化。擅长 React + Node.js 技术栈，对系统性能优化和高并发架构有深入实践。保持技术热情，开源项目累计 Star 2K+。</div>
+    </div>
+
+    <!-- 工作经历 -->
+    <div class="main-section">
+      <div class="main-title">💼 工作经历</div>
+
+      <div class="entry">
+        <div class="entry-row">
+          <span class="entry-title" contenteditable="true">字节跳动 · 高级前端工程师</span>
+          <span class="entry-date" contenteditable="true">2022.04 - 至今</span>
+        </div>
+        <ul class="entry-list">
+          <li contenteditable="true">负责抖音创作者平台前端架构，使用 React + TypeScript 重构核心模块，首屏加载时间从 3.2s 降至 0.8s</li>
+          <li contenteditable="true">设计并实现组件库(30+ 组件)，覆盖 8 个业务线，减少 60% 重复开发工作，代码复用率提升至 85%</li>
+          <li contenteditable="true">主导微前端架构落地，将巨石应用拆分为 5 个独立子应用，构建部署效率提升 3 倍</li>
+        </ul>
+      </div>
+
+      <div class="entry">
+        <div class="entry-row">
+          <span class="entry-title" contenteditable="true">美团 · 前端开发工程师</span>
+          <span class="entry-date" contenteditable="true">2019.07 - 2022.03</span>
+        </div>
+        <ul class="entry-list">
+          <li contenteditable="true">参与商家端管理平台开发(Vue.js)，负责订单管理、数据报表 2 个核心模块，服务 50 万+ 商家</li>
+          <li contenteditable="true">建立前端错误监控体系(Sentry+自研)，JS 错误率从 2.1% 降至 0.3%，故障发现时间缩短 80%</li>
+          <li contenteditable="true">指导 3 名初级工程师，组织 12 场技术分享，推动团队 Code Review 覆盖率从 40% 提升至 95%</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- 项目经验 -->
+    <div class="main-section">
+      <div class="main-title">🚀 项目经验</div>
+      <div class="entry">
+        <div class="entry-row">
+          <span class="entry-title" contenteditable="true">开源 CLI 构建工具 - BuilderX</span>
+          <span class="entry-sub" contenteditable="true">作者</span>
+          <span class="entry-date" contenteditable="true">2023.01 - 至今</span>
+        </div>
+        <ul class="entry-list">
+          <li contenteditable="true">使用 Rust + Node.js 开发高性能构建工具，构建速度比 Webpack 快 5 倍，GitHub Star 2.3K</li>
+          <li contenteditable="true">设计插件化架构，社区贡献 20+ 插件，被 50+ 公司采用，npm 月下载量 10K+</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- 教育 -->
+    <div class="main-section">
+      <div class="main-title">🎓 教育背景</div>
+      <div class="entry">
+        <div class="entry-row">
+          <span class="entry-title" contenteditable="true">北京邮电大学</span>
+          <span class="entry-sub" contenteditable="true">软件工程 · 本科</span>
+          <span class="entry-date" contenteditable="true">2015.09 - 2019.06</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+</body>
+</html>

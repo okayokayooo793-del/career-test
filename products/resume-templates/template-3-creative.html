@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>简历模板 - 创意设计风</title>
+<style>
+  :root { --accent: #ff6b6b; --dark: #2d3436; --text: #444; --light: #777; --bg: #fff; }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'PingFang SC', 'Microsoft YaHei', 'Segoe UI', sans-serif;
+    background: #f0ece7; display: flex; justify-content: center;
+    padding: 30px 16px; color: var(--text); line-height: 1.65;
+  }
+
+  .toolbar {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 10;
+    background: #2d3436; color: #fff; display: flex; align-items: center;
+    justify-content: center; gap: 16px; padding: 8px 16px; font-size: 0.82rem;
+    flex-wrap: wrap;
+  }
+  .toolbar button {
+    padding: 6px 16px; border: none; border-radius: 6px; cursor: pointer;
+    font-size: 0.82rem; font-weight: 600;
+  }
+  .btn-print { background: #ff6b6b; color: #fff; }
+  .btn-tip { background: rgba(255,255,255,0.15); color: #fff; }
+
+  .page {
+    width: 210mm; min-height: 297mm; background: var(--bg);
+    box-shadow: 0 4px 24px rgba(0,0,0,0.12); margin-top: 36px;
+    position: relative; overflow: hidden;
+  }
+
+  /* Decorative elements */
+  .deco-bar {
+    position: absolute; top: 0; left: 0; width: 100%; height: 8px;
+    background: linear-gradient(90deg, #ff6b6b, #ffa07a, #ffd93d, #6bcb77, #4d96ff);
+  }
+
+  .header {
+    padding: 32px 32px 20px; display: flex; justify-content: space-between;
+    align-items: flex-start; flex-wrap: wrap; gap: 16px;
+  }
+  .header-left { flex: 1; min-width: 200px; }
+  .header-right {
+    display: flex; flex-direction: column; gap: 4px;
+    font-size: 0.75rem; color: var(--light);
+  }
+  .header .name {
+    font-size: 2.2rem; font-weight: 800; letter-spacing: 1px;
+    border: none; outline: none; width: 100%;
+  }
+  .header .role {
+    font-size: 0.9rem; color: var(--accent); font-weight: 600;
+    margin-top: 4px; border: none; outline: none; width: 100%;
+  }
+  .header .tagline {
+    font-size: 0.82rem; color: var(--light); margin-top: 8px;
+    max-width: 400px; line-height: 1.6; border: none; outline: none; width: 100%;
+  }
+
+  .content { padding: 0 32px 24px; display: grid; grid-template-columns: 1fr 1fr; gap: 20px 28px; }
+
+  .col-section { margin-bottom: 18px; }
+  .col-title {
+    font-size: 0.78rem; font-weight: 700; letter-spacing: 2px;
+    text-transform: uppercase; color: var(--accent); margin-bottom: 12px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .col-title::after { content: ''; flex: 1; height: 1px; background: #eee; }
+
+  .entry { margin-bottom: 12px; }
+  .entry-title { font-weight: 600; font-size: 0.88rem; }
+  .entry-sub { font-size: 0.76rem; color: var(--accent); font-weight: 500; }
+  .entry-date { font-size: 0.72rem; color: #bbb; }
+  .entry-desc { font-size: 0.78rem; color: var(--light); margin-top: 3px; line-height: 1.55; }
+
+  .skill-list { display: flex; flex-wrap: wrap; gap: 6px; }
+  .skill-pill {
+    font-size: 0.73rem; padding: 4px 12px; border-radius: 20px;
+    border: 1.5px solid #eee; color: var(--light);
+  }
+
+  .self-box {
+    padding: 16px; background: #fafafa; border-radius: 10px;
+    border-left: 3px solid var(--accent); font-size: 0.8rem;
+    color: var(--light); line-height: 1.7;
+  }
+
+  [contenteditable]:focus { outline: 2px dashed rgba(255,107,107,0.2); outline-offset: 2px; }
+
+  @media print {
+    @page { size: A4; margin: 0; }
+    body { background: #fff; padding: 0; }
+    .toolbar { display: none !important; }
+    .page { box-shadow: none; margin: 0; width: 100%; min-height: auto; }
+    [contenteditable]:focus { outline: none; }
+  }
+
+  @media (max-width: 800px) {
+    .page { width: 100%; min-height: auto; }
+    .content { grid-template-columns: 1fr; padding: 0 18px 20px; }
+    .header { padding: 24px 18px 16px; }
+    .header .name { font-size: 1.6rem; }
+  }
+</style>
+</head>
+<body>
+
+<div class="toolbar">
+  <span>📝 点击任意文字直接修改</span>
+  <button class="btn-print" onclick="window.print()">🖨️ 导出 PDF</button>
+  <button class="btn-tip" onclick="alert('💡 填写提示：\n\n1. 适合创意/设计/市场/新媒体岗位\n2. 左侧放工作和教育经历\n3. 右侧放技能和自我评价\n4. 突出作品集链接和创意成果')">💡 填写提示</button>
+</div>
+
+<div class="page">
+  <div class="deco-bar"></div>
+
+  <div class="header">
+    <div class="header-left">
+      <div class="name" contenteditable="true">王 五</div>
+      <div class="role" contenteditable="true">资深视觉设计师</div>
+      <div class="tagline" contenteditable="true">5 年品牌视觉设计经验，擅长用设计语言传递品牌价值。作品曾获 Behance 首页推荐，服务过 20+ 知名品牌客户。</div>
+    </div>
+    <div class="header-right">
+      <span contenteditable="true">📧 wangwu@email.com</span>
+      <span contenteditable="true">📱 137-0000-0000</span>
+      <span contenteditable="true">📍 深圳市南山区</span>
+      <span contenteditable="true">🎨 behance.net/wangwu</span>
+      <span contenteditable="true">📷 dribbble.com/wangwu</span>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- Left Column -->
+    <div>
+      <div class="col-section">
+        <div class="col-title">💼 工作经历</div>
+        <div class="entry">
+          <div class="entry-title" contenteditable="true">腾讯 · 高级视觉设计师</div>
+          <div class="entry-sub" contenteditable="true">深圳</div>
+          <div class="entry-date" contenteditable="true">2022.03 - 至今</div>
+          <div class="entry-desc" contenteditable="true">负责游戏产品线的品牌视觉设计，主导 3 款 S 级游戏的主视觉、官网及推广素材设计。新游戏上线首月品牌曝光量破 2 亿，视觉相关转化率提升 35%。</div>
+        </div>
+        <div class="entry">
+          <div class="entry-title" contenteditable="true">网易 · 视觉设计师</div>
+          <div class="entry-sub" contenteditable="true">杭州</div>
+          <div class="entry-date" contenteditable="true">2019.06 - 2022.02</div>
+          <div class="entry-desc" contenteditable="true">负责电商平台的品牌视觉体系搭建，包括主视觉设计、营销活动页面、社媒内容视觉。双11 活动页 UV 破 5000 万，获站酷设计奖。</div>
+        </div>
+      </div>
+
+      <div class="col-section">
+        <div class="col-title">🎓 教育背景</div>
+        <div class="entry">
+          <div class="entry-title" contenteditable="true">中国美术学院</div>
+          <div class="entry-sub" contenteditable="true">视觉传达设计 · 本科</div>
+          <div class="entry-date" contenteditable="true">2015.09 - 2019.06</div>
+          <div class="entry-desc" contenteditable="true">毕业设计获院级优秀作品 · 全国大学生广告艺术大赛一等奖</div>
+        </div>
+      </div>
+
+      <div class="col-section">
+        <div class="col-title">🏆 获奖与荣誉</div>
+          <div class="entry-desc" contenteditable="true">🏅 Behance 首页推荐 · 2023</div>
+          <div class="entry-desc" contenteditable="true">🏅 站酷设计奖 · 年度最佳电商设计</div>
+          <div class="entry-desc" contenteditable="true">🏅 腾讯设计通道 · 杰出贡献奖</div>
+      </div>
+    </div>
+
+    <!-- Right Column -->
+    <div>
+      <div class="col-section">
+        <div class="col-title">🛠️ 设计技能</div>
+        <div class="skill-list">
+          <span class="skill-pill" contenteditable="true">Figma</span>
+          <span class="skill-pill" contenteditable="true">Adobe PS/AI</span>
+          <span class="skill-pill" contenteditable="true">After Effects</span>
+          <span class="skill-pill" contenteditable="true">Cinema 4D</span>
+          <span class="skill-pill" contenteditable="true">Blender</span>
+          <span class="skill-pill" contenteditable="true">品牌视觉设计</span>
+          <span class="skill-pill" contenteditable="true">UI/UX 设计</span>
+          <span class="skill-pill" contenteditable="true">动效设计</span>
+          <span class="skill-pill" contenteditable="true">插画</span>
+          <span class="skill-pill" contenteditable="true">摄影</span>
+        </div>
+      </div>
+
+      <div class="col-section">
+        <div class="col-title">🚀 项目作品</div>
+        <div class="entry">
+          <div class="entry-title" contenteditable="true">《星途》游戏全案视觉</div>
+          <div class="entry-desc" contenteditable="true">独立完成游戏Logo、UI、KV及全渠道推广素材。作品被多家设计媒体转载，Behance 浏览量 50 万+。</div>
+        </div>
+        <div class="entry">
+          <div class="entry-title" contenteditable="true">XX 电商品牌视觉焕新</div>
+          <div class="entry-desc" contenteditable="true">主导品牌视觉升级项目，涉及 Logo 优化、色彩体系、应用规范。品牌认知度调研提升 28%。</div>
+        </div>
+      </div>
+
+      <div class="col-section">
+        <div class="col-title">💬 自我评价</div>
+        <div class="self-box" contenteditable="true">
+          对视觉美学有极致追求，同时注重设计对商业目标的驱动能力。善于跨团队沟通，能用对方理解的语言阐述设计决策。业余时间运营设计类自媒体账号（5 万粉丝），持续输出设计教程与行业观察。
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+</body>
+</html>

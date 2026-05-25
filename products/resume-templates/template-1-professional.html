@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>简历模板 - 极简专业风</title>
+<style>
+  :root { --primary: #222; --secondary: #555; --line: #ddd; --bg: #fff; }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'PingFang SC', 'Microsoft YaHei', 'Helvetica Neue', sans-serif;
+    background: #e8e8e8; display: flex; justify-content: center;
+    padding: 30px 16px; color: var(--primary); line-height: 1.7;
+  }
+
+  .toolbar {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 10;
+    background: #222; color: #fff; display: flex; align-items: center;
+    justify-content: center; gap: 16px; padding: 8px 16px; font-size: 0.82rem;
+    flex-wrap: wrap;
+  }
+  .toolbar button {
+    padding: 6px 16px; border: none; border-radius: 6px; cursor: pointer;
+    font-size: 0.82rem; font-weight: 600; transition: opacity 0.2s;
+  }
+  .btn-print { background: #4a90ff; color: #fff; }
+  .btn-print:hover { opacity: 0.85; }
+  .btn-tip { background: rgba(255,255,255,0.15); color: #fff; }
+
+  .page {
+    width: 210mm; min-height: 297mm; background: var(--bg);
+    padding: 22mm 20mm 18mm; box-shadow: 0 4px 24px rgba(0,0,0,0.12);
+    margin-top: 36px; position: relative;
+  }
+
+  .header { text-align: center; margin-bottom: 16px; }
+  .header .name {
+    font-size: 1.8rem; font-weight: 700; letter-spacing: 2px;
+    border: none; outline: none; text-align: center; width: 100%;
+  }
+  .header .contact {
+    font-size: 0.78rem; color: var(--secondary); margin-top: 6px;
+    border: none; outline: none; text-align: center; width: 100%;
+  }
+  .header .line {
+    width: 60px; height: 2px; background: var(--primary);
+    margin: 12px auto 0;
+  }
+
+  .section { margin-bottom: 14px; }
+  .section-title {
+    font-size: 0.9rem; font-weight: 700; letter-spacing: 2px;
+    text-transform: uppercase; padding-bottom: 4px;
+    border-bottom: 1.5px solid var(--line); margin-bottom: 10px;
+  }
+
+  .entry { margin-bottom: 10px; }
+  .entry-header {
+    display: flex; justify-content: space-between; align-items: baseline;
+    flex-wrap: wrap; margin-bottom: 3px;
+  }
+  .entry-title { font-weight: 600; font-size: 0.9rem; }
+  .entry-sub { font-size: 0.78rem; color: var(--secondary); }
+  .entry-date { font-size: 0.75rem; color: #999; white-space: nowrap; }
+  .entry-desc { font-size: 0.8rem; color: var(--secondary); margin-top: 2px; }
+  .entry-desc ul { padding-left: 16px; }
+  .entry-desc li { margin-bottom: 2px; }
+
+  .skills-row { display: flex; flex-wrap: wrap; gap: 6px; }
+  .skill-tag {
+    font-size: 0.78rem; padding: 2px 10px; background: #f5f5f5;
+    border-radius: 3px; color: var(--secondary);
+  }
+
+  [contenteditable]:focus { outline: 2px dashed #4a90ff33; outline-offset: 2px; }
+  [contenteditable]:empty::before { content: attr(data-placeholder); color: #ccc; }
+
+  @media print {
+    @page { size: A4; margin: 0; }
+    body { background: #fff; padding: 0; }
+    .toolbar { display: none !important; }
+    .page { box-shadow: none; margin: 0; width: 100%; min-height: auto; padding: 18mm 16mm; }
+    [contenteditable]:focus { outline: none; }
+    [contenteditable]:empty::before { content: ''; }
+  }
+
+  @media (max-width: 800px) {
+    .page { width: 100%; padding: 20px 16px; min-height: auto; }
+    .header .name { font-size: 1.4rem; }
+  }
+</style>
+</head>
+<body>
+
+<div class="toolbar">
+  <span>📝 点击任意文字直接修改</span>
+  <button class="btn-print" onclick="window.print()">🖨️ 导出 PDF</button>
+  <button class="btn-tip" onclick="showTips()">💡 填写提示</button>
+</div>
+
+<div class="page">
+
+  <div class="header">
+    <div class="name" contenteditable="true">张 三</div>
+    <div class="contact" contenteditable="true">📧 zhangsan@email.com ｜ 📱 138-0000-0000 ｜ 📍 上海市 ｜ 🔗 github.com/zhangsan</div>
+    <div class="line"></div>
+  </div>
+
+  <!-- 求职意向 -->
+  <div class="section">
+    <div class="section-title">求职意向</div>
+    <div class="entry">
+      <div class="entry-header">
+        <span class="entry-title" contenteditable="true">产品经理</span>
+        <span class="entry-date" contenteditable="true">期望薪资：15-20K · 全职</span>
+      </div>
+      <div class="entry-desc" contenteditable="true">3 年 B 端 SaaS 产品经验，擅长需求分析与产品规划。期望加入快速成长的科技公司，用产品思维驱动业务增长。</div>
+    </div>
+  </div>
+
+  <!-- 工作经历 -->
+  <div class="section">
+    <div class="section-title">工作经历</div>
+
+    <div class="entry">
+      <div class="entry-header">
+        <span class="entry-title" contenteditable="true">上海 XX 科技有限公司</span>
+        <span class="entry-sub" contenteditable="true">产品经理</span>
+        <span class="entry-date" contenteditable="true">2023.03 - 至今</span>
+      </div>
+      <div class="entry-desc">
+        <ul>
+          <li contenteditable="true">主导企业级 SaaS 产品从 0 到 1 的搭建，上线 6 个月内获客 200+ 企业客户，MRR 突破 50 万</li>
+          <li contenteditable="true">深度访谈 80+ 用户，输出 120 页需求分析文档，推动 3 个核心功能迭代，用户留存率提升 25%</li>
+          <li contenteditable="true">协调设计、研发、测试 15 人团队，建立敏捷开发流程，版本交付周期从 4 周缩短至 2 周</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="entry">
+      <div class="entry-header">
+        <span class="entry-title" contenteditable="true">杭州 XX 网络技术有限公司</span>
+        <span class="entry-sub" contenteditable="true">产品助理</span>
+        <span class="entry-date" contenteditable="true">2021.07 - 2023.02</span>
+      </div>
+      <div class="entry-desc">
+        <ul>
+          <li contenteditable="true">负责电商后台管理系统 3 个模块的需求收集与 PRD 撰写，累计输出 50+ 份产品文档</li>
+          <li contenteditable="true">通过数据分析发现订单处理流程瓶颈，优化后人工处理效率提升 40%</li>
+          <li contenteditable="true">参与用户验收测试(UAT)，管理 200+ Bug 的生命周期，确保 3 次大版本顺利上线</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- 项目经验 -->
+  <div class="section">
+    <div class="section-title">项目经验</div>
+    <div class="entry">
+      <div class="entry-header">
+        <span class="entry-title" contenteditable="true">智能客服工单系统</span>
+        <span class="entry-sub" contenteditable="true">项目负责人</span>
+        <span class="entry-date" contenteditable="true">2024.01 - 2024.06</span>
+      </div>
+      <div class="entry-desc">
+        <ul>
+          <li contenteditable="true">从 0 设计工单自动分配与流转逻辑，接入 AI 语义分析引擎，工单分类准确率达 92%</li>
+          <li contenteditable="true">日均处理 5000+ 工单，平均响应时间从 15 分钟降至 2 分钟，客户满意度 NPS 提升 18 分</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- 教育背景 -->
+  <div class="section">
+    <div class="section-title">教育背景</div>
+    <div class="entry">
+      <div class="entry-header">
+        <span class="entry-title" contenteditable="true">浙江大学</span>
+        <span class="entry-sub" contenteditable="true">计算机科学与技术 · 本科</span>
+        <span class="entry-date" contenteditable="true">2017.09 - 2021.06</span>
+      </div>
+      <div class="entry-desc" contenteditable="true">GPA 3.8/4.0 · 校级优秀毕业生 · ACM 程序设计竞赛银奖</div>
+    </div>
+  </div>
+
+  <!-- 技能 -->
+  <div class="section">
+    <div class="section-title">专业技能</div>
+    <div class="skills-row">
+      <span class="skill-tag" contenteditable="true">产品需求分析</span>
+      <span class="skill-tag" contenteditable="true">PRD/MRD 撰写</span>
+      <span class="skill-tag" contenteditable="true">Axure RP</span>
+      <span class="skill-tag" contenteditable="true">Figma</span>
+      <span class="skill-tag" contenteditable="true">SQL 数据分析</span>
+      <span class="skill-tag" contenteditable="true">敏捷/Scrum</span>
+      <span class="skill-tag" contenteditable="true">Jira/Confluence</span>
+      <span class="skill-tag" contenteditable="true">英语 CET-6</span>
+    </div>
+  </div>
+
+</div>
+
+<script>
+function showTips() {
+  alert('💡 填写提示：\n\n1. 点击任意文字直接编辑\n2. 工作经历用 STAR 法：情境-任务-行动-结果\n3. 每个经历至少写 1 个数字成果\n4. 技能标签控制在 6-10 个\n5. 编辑完成后点击"导出 PDF"保存');
+}
+</script>
+</body>
+</html>

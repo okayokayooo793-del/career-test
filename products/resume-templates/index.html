@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>高颜值简历模板套装 | 3款可编辑·导出PDF</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+    background: #f5f5f5; color: #222; line-height: 1.6;
+  }
+  .hero {
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+    color: #fff; text-align: center; padding: 48px 20px 36px;
+  }
+  .hero .price-badge {
+    display: inline-block; background: #ff4757; color: #fff;
+    padding: 4px 16px; border-radius: 20px; font-size: 0.82rem;
+    font-weight: 600; margin-bottom: 16px; letter-spacing: 1px;
+  }
+  .hero h1 { font-size: 1.7rem; margin-bottom: 8px; }
+  .hero .sub { font-size: 0.9rem; color: #aab; margin-bottom: 20px; }
+  .hero .price { font-size: 2.4rem; font-weight: 800; color: #ff4757; }
+  .hero .price s { font-size: 1rem; color: #666; margin-left: 8px; font-weight: 400; }
+
+  .container { max-width: 800px; margin: 0 auto; padding: 24px 16px; }
+  .section { margin-bottom: 24px; }
+  .section h2 { font-size: 1.15rem; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+
+  /* Template cards */
+  .template-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; }
+  .tpl-card {
+    background: #fff; border-radius: 14px; overflow: hidden;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.06); transition: transform 0.2s, box-shadow 0.2s;
+    cursor: pointer; text-decoration: none; color: inherit; display: block;
+  }
+  .tpl-card:hover { transform: translateY(-3px); box-shadow: 0 6px 20px rgba(0,0,0,0.1); }
+  .tpl-preview {
+    height: 200px; display: flex; align-items: center; justify-content: center;
+    font-size: 3rem; color: #fff; position: relative; overflow: hidden;
+  }
+  .tpl-preview.p1 { background: linear-gradient(135deg, #f8f9fa, #e9ecef); color: #333; }
+  .tpl-preview.p2 { background: linear-gradient(135deg, #1a73e8, #4285f4); }
+  .tpl-preview.p3 { background: linear-gradient(135deg, #ff6b6b, #ffa07a); }
+  .tpl-preview .tpl-label {
+    position: absolute; top: 12px; right: 12px;
+    background: rgba(0,0,0,0.5); color: #fff; padding: 3px 10px;
+    border-radius: 10px; font-size: 0.7rem;
+  }
+  .tpl-info { padding: 14px; }
+  .tpl-info h3 { font-size: 0.95rem; margin-bottom: 4px; }
+  .tpl-info p { font-size: 0.75rem; color: #888; }
+
+  /* Features */
+  .feature-list { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .feature-item {
+    display: flex; align-items: center; gap: 8px; padding: 10px 14px;
+    background: #fff; border-radius: 10px; font-size: 0.85rem;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+  }
+  .feature-item .fi { font-size: 1.2rem; }
+
+  /* FAQ */
+  .faq-item { background: #fff; border-radius: 10px; padding: 14px 16px; margin-bottom: 8px; box-shadow: 0 1px 4px rgba(0,0,0,0.04); }
+  .faq-item h4 { font-size: 0.9rem; margin-bottom: 4px; }
+  .faq-item p { font-size: 0.8rem; color: #666; }
+
+  /* CTA */
+  .cta-bar {
+    position: sticky; bottom: 0; background: #fff; padding: 14px 20px;
+    border-top: 1px solid #eee; display: flex; gap: 10px; align-items: center;
+    box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
+  }
+  .cta-price { flex-shrink: 0; }
+  .cta-price .cp { font-size: 1.5rem; font-weight: 800; color: #ff4757; }
+  .cta-price .co { font-size: 0.7rem; color: #999; }
+  .cta-btn {
+    flex: 1; padding: 14px; background: #ff4757; color: #fff; border: none;
+    border-radius: 10px; font-size: 1rem; font-weight: 600; cursor: pointer;
+    text-align: center; text-decoration: none; transition: transform 0.2s;
+  }
+  .cta-btn:hover { transform: scale(1.02); }
+
+  .preview-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 100; }
+  .preview-modal.active { display: flex; align-items: center; justify-content: center; }
+  .preview-modal img, .preview-modal iframe { max-width: 90vw; max-height: 85vh; background: #fff; border-radius: 8px; }
+
+  @media (max-width: 480px) {
+    .hero h1 { font-size: 1.3rem; }
+    .feature-list { grid-template-columns: 1fr; }
+    .template-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="price-badge">🔥 限时特惠</div>
+  <h1>高颜值简历模板套装</h1>
+  <p class="sub">3 款风格 · 可编辑文字 · 一键导出 PDF<br>适合求职/实习/跳槽所有场景</p>
+  <div class="price">¥6.9 <s>¥29.9</s></div>
+  <p style="font-size:0.72rem;color:#aab;margin-top:4px;">购买一次，永久使用 · 手机电脑都能编辑</p>
+</div>
+
+<div class="container">
+
+  <!-- Templates -->
+  <div class="section">
+    <h2>📄 3 款简历模板</h2>
+    <div class="template-grid">
+      <a href="template-1-professional.html" class="tpl-card" target="_blank">
+        <div class="tpl-preview p1">
+          <span style="font-size:1rem;background:#fff;padding:8px 16px;border-radius:4px;box-shadow:0 2px 8px rgba(0,0,0,0.1);color:#333;">
+            <strong>张三</strong><br><span style="font-size:0.6rem;color:#888;">产品经理</span>
+          </span>
+          <div class="tpl-label">经典稳重</div>
+        </div>
+        <div class="tpl-info">
+          <h3>极简专业风</h3>
+          <p>黑白经典配色 · 适合金融/法律/国企/咨询</p>
+        </div>
+      </a>
+
+      <a href="template-2-tech.html" class="tpl-card" target="_blank">
+        <div class="tpl-preview p2">
+          <span style="font-size:1rem;padding:8px 16px;border-radius:4px;color:#fff;text-align:center;">
+            <strong>李四</strong><br><span style="font-size:0.6rem;opacity:0.85;">全栈工程师</span>
+          </span>
+          <div class="tpl-label">现代科技</div>
+        </div>
+        <div class="tpl-info">
+          <h3>现代科技风</h3>
+          <p>蓝色科技感 · 适合互联网/IT/技术岗</p>
+        </div>
+      </a>
+
+      <a href="template-3-creative.html" class="tpl-card" target="_blank">
+        <div class="tpl-preview p3">
+          <span style="font-size:1rem;padding:8px 16px;border-radius:4px;color:#fff;text-align:center;">
+            <strong>王五</strong><br><span style="font-size:0.6rem;opacity:0.85;">视觉设计师</span>
+          </span>
+          <div class="tpl-label">创意活力</div>
+        </div>
+        <div class="tpl-info">
+          <h3>创意设计风</h3>
+          <p>个性化配色 · 适合设计/市场/新媒体</p>
+        </div>
+      </a>
+    </div>
+  </div>
+
+  <!-- Features -->
+  <div class="section">
+    <h2>✨ 产品特色</h2>
+    <div class="feature-list">
+      <div class="feature-item"><span class="fi">📝</span> 浏览器直接编辑文字</div>
+      <div class="feature-item"><span class="fi">🖨️</span> 一键打印/导出 PDF</div>
+      <div class="feature-item"><span class="fi">📱</span> 手机电脑都能用</div>
+      <div class="feature-item"><span class="fi">🎨</span> 3 种风格适配不同行业</div>
+      <div class="feature-item"><span class="fi">🔄</span> 永久使用不限次数</div>
+      <div class="feature-item"><span class="fi">💡</span> 含填写指导说明</div>
+      <div class="feature-item"><span class="fi">✅</span> HR 筛选系统友好</div>
+      <div class="feature-item"><span class="fi">📋</span> 赠送面试常见问题清单</div>
+    </div>
+  </div>
+
+  <!-- FAQ -->
+  <div class="section">
+    <h2>❓ 常见问题</h2>
+    <div class="faq-item">
+      <h4>怎么编辑模板？</h4>
+      <p>用浏览器打开模板文件，直接在页面上修改文字内容，改完后 Ctrl+P 打印为 PDF 即可。不需要安装任何软件。</p>
+    </div>
+    <div class="faq-item">
+      <h4>手机能用吗？</h4>
+      <p>可以。手机浏览器打开模板，长按文字即可编辑，然后截图或用手机导出 PDF。</p>
+    </div>
+    <div class="faq-item">
+      <h4>购买后怎么获取？</h4>
+      <p>购买后你会收到网盘链接，包含 3 款模板 HTML 文件 + 使用说明，下载到手机或电脑都能用。</p>
+    </div>
+    <div class="faq-item">
+      <h4>模板能通过 HR 筛选系统吗？</h4>
+      <p>能。所有模板均为纯文字 HTML，生成的 PDF 内容可被 ATS 系统正确解析，不会因排版问题被筛掉。</p>
+    </div>
+  </div>
+
+  <div style="text-align:center;color:#999;font-size:0.7rem;padding:20px 0;">
+    购买后如需帮助，闲鱼联系我即可
+  </div>
+
+</div>
+
+<!-- Sticky CTA -->
+<div class="cta-bar">
+  <div class="cta-price">
+    <div class="cp">¥6.9</div>
+    <div class="co">3款套装</div>
+  </div>
+  <a class="cta-btn" href="#buy">💰 立即购买</a>
+</div>
+
+<div id="buy" style="text-align:center;padding:30px 16px;">
+  <div style="background:#fff;border-radius:14px;padding:24px;max-width:400px;margin:0 auto;box-shadow:0 2px 12px rgba(0,0,0,0.06);">
+    <h3 style="margin-bottom:12px;">💚 微信扫码支付</h3>
+    <div style="width:180px;height:180px;background:#f0f0f0;margin:0 auto 16px;border-radius:10px;display:flex;align-items:center;justify-content:center;color:#999;font-size:0.8rem;flex-direction:column;gap:6px;">
+      <span style="font-size:2rem;">💰</span>
+      <span>¥6.90</span>
+      <span style="font-size:0.65rem;">扫码支付</span>
+    </div>
+    <p style="font-size:0.75rem;color:#999;">
+      ⚠️ 此处需替换为你自己的微信/支付宝收款码<br>
+      推荐使用 <b>面包多</b>(mbd.pub) 或 <b>PayJS</b> 自动发货
+    </p>
+    <p style="font-size:0.78rem;color:#666;margin-top:12px;">支付后截图发送闲鱼，自动发货 👇</p>
+  </div>
+</div>
+
+</body>
+</html>

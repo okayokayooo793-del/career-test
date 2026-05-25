@@ -1,0 +1,764 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>奶龙快跑！</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #1a1a2e; touch-action: none; overscroll-behavior: none;
+    display: flex; justify-content: center; align-items: center;
+    height: 100dvh; overflow: hidden; user-select: none;
+    font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  }
+  canvas { display: block; max-width: 100vw; max-height: 100dvh; }
+  #ui {
+    position: fixed; top: 0; left: 0; right: 0; pointer-events: none;
+    display: flex; justify-content: space-between; padding: 16px 20px;
+    color: #fff; font-weight: 700; z-index: 10;
+  }
+  #score-ui { font-size: 1.2rem; text-shadow: 0 2px 8px rgba(0,0,0,0.5); }
+  #coin-ui { font-size: 0.9rem; text-shadow: 0 2px 8px rgba(0,0,0,0.5); }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="ui">
+  <div id="score-ui">🏃 0m</div>
+  <div id="coin-ui">🪙 0</div>
+</div>
+<script>
+// ─── Setup ──────────────────────────────────
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+let W, H;
+
+function resize() {
+  W = Math.min(window.innerWidth, 500);
+  H = Math.min(window.innerHeight, 750);
+  canvas.width = W;
+  canvas.height = H;
+  canvas.style.width = W + 'px';
+  canvas.style.height = H + 'px';
+}
+resize();
+window.addEventListener('resize', resize);
+
+// ─── Game State ─────────────────────────────
+const STATE = { IDLE: 0, PLAYING: 1, OVER: 2 };
+let gameState = STATE.IDLE;
+let score = 0;
+let coins = 0;
+let speed = 5;
+let maxSpeed = 18;
+let speedIncrement = 0.002;
+let distance = 0;
+let shakeTimer = 0;
+let shakeIntensity = 0;
+
+// ─── Player ─────────────────────────────────
+const player = {
+  lane: 1,        // 0=left, 1=center, 2=right
+  targetX: 0,     // target X position
+  x: 0,           // current X
+  y: 0,           // base Y on ground
+  vy: 0,          // vertical velocity
+  jumpState: 0,   // 0=ground, 1=jumping, 2=sliding
+  slideTimer: 0,
+  animFrame: 0,
+  animTimer: 0,
+  bobOffset: 0,
+  trailParticles: [],
+};
+
+const LANE_WIDTH_RATIO = 0.22;
+let laneX = [0, 0, 0]; // calculated in update
+
+// ─── Obstacles ──────────────────────────────
+let obstacles = [];
+const OBSTACLE_TYPES = {
+  BARRIER: { w: 0.08, h: 0.14, type: 'barrier', desc: '左右闪避' },
+  LOW: { w: 0.18, h: 0.05, type: 'low', desc: '上滑跳跃' },
+  HIGH: { w: 0.18, h: 0.12, type: 'high', desc: '下滑躲避' },
+};
+
+// ─── Coins ──────────────────────────────────
+let coinItems = [];
+let particles = [];
+
+// ─── Background ─────────────────────────────
+let bgOffset = 0;
+let trees = [];
+let buildings = [];
+
+function initWorld() {
+  trees = [];
+  buildings = [];
+  for (let i = 0; i < 15; i++) {
+    trees.push({ x: Math.random() * W * 1.5, side: Math.random() > 0.5 ? 'left' : 'right', h: 0.06 + Math.random() * 0.1 });
+    buildings.push({ x: Math.random() * W * 1.5, side: Math.random() > 0.5 ? 'left' : 'right', h: 0.08 + Math.random() * 0.15, w: 0.04 + Math.random() * 0.06 });
+  }
+}
+
+// ─── Draw 奶龙 ──────────────────────────────
+function drawNailong(x, y, scale, state) {
+  ctx.save();
+  ctx.translate(x, y);
+  const s = scale;
+
+  // Shadow
+  ctx.fillStyle = 'rgba(0,0,0,0.2)';
+  ctx.beginPath();
+  ctx.ellipse(0, s * 35, s * 28, s * 8, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Squash & stretch based on state
+  let sx = 1, sy = 1;
+  if (state === 'jump') { sx = 0.85; sy = 1.2; }
+  if (state === 'slide') { sx = 1.5; sy = 0.5; }
+
+  ctx.scale(sx, sy);
+
+  // Body
+  const bodyGrad = ctx.createLinearGradient(0, -s * 30, 0, s * 20);
+  bodyGrad.addColorStop(0, '#FFE082');
+  bodyGrad.addColorStop(0.5, '#FFCC02');
+  bodyGrad.addColorStop(1, '#FFA000');
+  ctx.fillStyle = bodyGrad;
+  ctx.beginPath();
+  ctx.ellipse(0, 0, s * 26, s * 30, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = '#E68900';
+  ctx.lineWidth = s * 1.5;
+  ctx.stroke();
+
+  // Belly
+  ctx.fillStyle = '#FFF9C4';
+  ctx.beginPath();
+  ctx.ellipse(0, s * 5, s * 18, s * 20, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Head
+  ctx.fillStyle = '#FFE082';
+  ctx.beginPath();
+  ctx.arc(0, -s * 22, s * 22, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = '#E68900';
+  ctx.lineWidth = s * 1.5;
+  ctx.stroke();
+
+  // Ears/Horns
+  ctx.fillStyle = '#FFCC02';
+  ctx.beginPath(); ctx.moveTo(-s * 14, -s * 34); ctx.lineTo(-s * 18, -s * 48); ctx.lineTo(-s * 4, -s * 36); ctx.fill();
+  ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(s * 14, -s * 34); ctx.lineTo(s * 18, -s * 48); ctx.lineTo(s * 4, -s * 36); ctx.fill();
+  ctx.stroke();
+
+  // Inner ear
+  ctx.fillStyle = '#FFAB91';
+  ctx.beginPath(); ctx.arc(-s * 11, -s * 40, s * 5, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.arc(s * 11, -s * 40, s * 5, 0, Math.PI * 2); ctx.fill();
+
+  // Eyes
+  ctx.fillStyle = '#fff';
+  ctx.beginPath(); ctx.arc(-s * 8, -s * 26, s * 7, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.arc(s * 8, -s * 26, s * 7, 0, Math.PI * 2); ctx.fill();
+
+  // Pupils
+  ctx.fillStyle = '#333';
+  ctx.beginPath(); ctx.arc(-s * 6, -s * 25, s * 3.5, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.arc(s * 10, -s * 25, s * 3.5, 0, Math.PI * 2); ctx.fill();
+
+  // Eye shine
+  ctx.fillStyle = '#fff';
+  ctx.beginPath(); ctx.arc(-s * 7, -s * 27, s * 1.8, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.arc(s * 9, -s * 27, s * 1.8, 0, Math.PI * 2); ctx.fill();
+
+  // Mouth
+  ctx.strokeStyle = '#BF6A02';
+  ctx.lineWidth = s * 1.2;
+  ctx.beginPath();
+  ctx.arc(0, -s * 16, s * 6, 0.2, Math.PI - 0.2);
+  ctx.stroke();
+
+  // Blush
+  ctx.fillStyle = 'rgba(255,150,150,0.4)';
+  ctx.beginPath(); ctx.ellipse(-s * 15, -s * 15, s * 5, s * 3, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(s * 15, -s * 15, s * 5, s * 3, 0, 0, Math.PI * 2); ctx.fill();
+
+  // Small wings
+  ctx.fillStyle = '#FFE082';
+  ctx.beginPath();
+  ctx.ellipse(-s * 26, -s * 8, s * 9, s * 6, -0.3, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = '#E68900';
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.ellipse(s * 26, -s * 8, s * 9, s * 6, 0.3, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.stroke();
+
+  // Arms
+  ctx.fillStyle = '#FFCC02';
+  ctx.strokeStyle = '#E68900';
+  ctx.lineWidth = s * 1;
+  const armWave = state === 'run' ? Math.sin(Date.now() * 0.015) * s * 4 : 0;
+  ctx.beginPath(); ctx.ellipse(-s * 24, -s * 2 + armWave, s * 6, s * 10, -0.5, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+  ctx.beginPath(); ctx.ellipse(s * 24, -s * 2 - armWave, s * 6, s * 10, 0.5, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+
+  // Feet
+  ctx.fillStyle = '#FFCC02';
+  const footOff = state === 'run' ? Math.sin(Date.now() * 0.015) * s * 3 : 0;
+  ctx.beginPath(); ctx.ellipse(-s * 10, s * 28 - footOff, s * 7, s * 5, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+  ctx.beginPath(); ctx.ellipse(s * 10, s * 28 + footOff, s * 7, s * 5, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+
+  ctx.restore();
+}
+
+// ─── Draw Obstacle ──────────────────────────
+function drawObstacle(x, y, w, h, type) {
+  ctx.save();
+  ctx.translate(x, y);
+
+  if (type === 'barrier') {
+    ctx.fillStyle = '#e74c3c';
+    ctx.fillRect(-w/2, -h/2, w, h);
+    ctx.strokeStyle = '#c0392b';
+    ctx.lineWidth = 3;
+    ctx.strokeRect(-w/2, -h/2, w, h);
+    // Warning stripes
+    ctx.fillStyle = '#f1c40f';
+    for (let i = -h/2; i < h/2; i += 12) {
+      ctx.fillRect(-w/2, i, w, 6);
+    }
+  } else if (type === 'low') {
+    ctx.fillStyle = '#e67e22';
+    ctx.fillRect(-w/2, -h/2, w, h);
+    ctx.strokeStyle = '#d35400';
+    ctx.lineWidth = 3;
+    ctx.strokeRect(-w/2, -h/2, w, h);
+  } else if (type === 'high') {
+    ctx.fillStyle = '#8e44ad';
+    ctx.fillRect(-w/2, -h/2, w, h);
+    ctx.strokeStyle = '#6c3483';
+    ctx.lineWidth = 3;
+    ctx.strokeRect(-w/2, -h/2, w, h);
+  }
+
+  ctx.restore();
+}
+
+// ─── Draw Coin ──────────────────────────────
+function drawCoin(x, y, r) {
+  ctx.save();
+  ctx.translate(x, y);
+  const shimmer = Math.sin(Date.now() * 0.008) * 0.2 + 0.8;
+  ctx.fillStyle = '#FFD700';
+  ctx.beginPath();
+  ctx.arc(0, 0, r, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = '#B8860B';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+  ctx.fillStyle = `rgba(255,255,200,${shimmer})`;
+  ctx.beginPath();
+  ctx.arc(0, 0, r * 0.55, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#333';
+  ctx.font = `${r*1.2}px sans-serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('🪙', 0, 1);
+  ctx.restore();
+}
+
+// ─── Spawn Logic ────────────────────────────
+let spawnTimer = 0;
+let spawnInterval = 55;
+let coinSpawnTimer = 0;
+
+function spawnObstacle() {
+  const types = Object.values(OBSTACLE_TYPES);
+  const type = types[Math.floor(Math.random() * types.length)];
+
+  if (type.type === 'barrier') {
+    // Barrier occupies one lane, need to dodge left or right
+    const lane = Math.floor(Math.random() * 3);
+    // Make sure it doesn't block all 3 lanes
+    obstacles.push({
+      x: W * 1.2,
+      y: H * 0.72,
+      w: W * type.w,
+      h: H * type.h,
+      type: type.type,
+      lane: lane,
+    });
+  } else {
+    // Low/high obstacles span all lanes but can be jumped/slid
+    obstacles.push({
+      x: W * 1.2,
+      y: type.type === 'high' ? H * 0.62 : H * 0.78,
+      w: W * type.w,
+      h: H * type.h,
+      type: type.type,
+      lane: -1, // spans all lanes
+    });
+  }
+}
+
+function spawnCoin() {
+  const lane = Math.floor(Math.random() * 3);
+  coinItems.push({
+    x: W * 1.2,
+    y: H * 0.6 - Math.random() * H * 0.2,
+    r: W * 0.025,
+    lane: lane,
+    collected: false,
+  });
+}
+
+// ─── Game Loop ──────────────────────────────
+function update() {
+  if (gameState !== STATE.PLAYING) return;
+
+  // Speed curve
+  speed = Math.min(maxSpeed, speed + speedIncrement);
+  distance += speed * 0.5;
+
+  // Player animation
+  player.animTimer += speed;
+  player.bobOffset = Math.sin(player.animTimer * 0.15) * H * 0.008;
+
+  // Lane positions
+  const lw = W * LANE_WIDTH_RATIO;
+  laneX = [
+    W * 0.5 - lw * 1.5,
+    W * 0.5,
+    W * 0.5 + lw * 1.5,
+  ];
+  player.targetX = laneX[player.lane];
+
+  // Smooth lane switching
+  player.x += (player.targetX - player.x) * 0.18;
+
+  // Jump physics
+  if (player.jumpState === 1) {
+    player.vy += 0.6;
+    player.y += player.vy;
+    if (player.y >= 0) {
+      player.y = 0;
+      player.vy = 0;
+      player.jumpState = 0;
+    }
+  }
+
+  // Slide timer
+  if (player.jumpState === 2) {
+    player.slideTimer--;
+    if (player.slideTimer <= 0) {
+      player.jumpState = 0;
+    }
+  }
+
+  // Spawn obstacles
+  spawnTimer++;
+  if (spawnTimer >= spawnInterval) {
+    spawnTimer = 0;
+    spawnInterval = Math.max(22, spawnInterval - 0.03);
+    spawnObstacle();
+  }
+
+  // Spawn coins
+  coinSpawnTimer++;
+  if (coinSpawnTimer >= 28) {
+    coinSpawnTimer = 0;
+    spawnCoin();
+    if (Math.random() < 0.4) spawnCoin(); // bonus double coin
+  }
+
+  // Move obstacles
+  for (let obs of obstacles) {
+    obs.x -= speed;
+  }
+
+  // Move coins
+  for (let coin of coinItems) {
+    coin.x -= speed;
+  }
+
+  // Move particles
+  for (let p of particles) {
+    p.x += p.vx; p.y += p.vy; p.life--;
+  }
+
+  // Collision detection
+  const px = player.x;
+  const py = H * 0.7 + player.y + player.bobOffset;
+  const pw = W * 0.1;
+  const ph = H * 0.13;
+
+  for (let obs of obstacles) {
+    if (obs.type === 'barrier') {
+      const ox = laneX[obs.lane];
+      if (player.lane === obs.lane) {
+        if (checkCollision(px, py, pw, ph, ox, obs.y, obs.w, obs.h)) {
+          gameOver();
+          return;
+        }
+      }
+    } else if (obs.type === 'low') {
+      if (player.jumpState !== 1 && checkCollision(px, py, pw, ph, obs.x + obs.w/2, obs.y, obs.w, obs.h)) {
+        gameOver();
+        return;
+      }
+    } else if (obs.type === 'high') {
+      if (player.jumpState !== 2 && checkCollision(px, py, pw, ph, obs.x + obs.w/2, obs.y, obs.w, obs.h)) {
+        gameOver();
+        return;
+      }
+    }
+  }
+
+  // Coin collection
+  for (let coin of coinItems) {
+    if (!coin.collected && player.lane === coin.lane) {
+      const cx = laneX[coin.lane];
+      const dx = px - cx;
+      const dy = (py - ph/2) - coin.y;
+      if (Math.sqrt(dx * dx + dy * dy) < pw * 2) {
+        coin.collected = true;
+        coins++;
+        // Sparkle particles
+        for (let i = 0; i < 6; i++) {
+          particles.push({
+            x: cx, y: coin.y,
+            vx: (Math.random()-0.5)*4, vy: (Math.random()-0.5)*4-2,
+            life: 20, color: '#FFD700',
+          });
+        }
+      }
+    }
+  }
+
+  // Cleanup
+  obstacles = obstacles.filter(o => o.x > -W * 0.3);
+  coinItems = coinItems.filter(c => !c.collected && c.x > -W * 0.3);
+  particles = particles.filter(p => p.life > 0);
+
+  // Shake decay
+  if (shakeTimer > 0) shakeTimer--;
+
+  // Update UI
+  document.getElementById('score-ui').textContent = `🏃 ${Math.floor(distance)}m`;
+  document.getElementById('coin-ui').textContent = `🪙 ${coins}`;
+
+  // Background elements
+  bgOffset = (bgOffset + speed * 0.3) % W;
+}
+
+function checkCollision(px, py, pw, ph, ox, oy, ow, oh) {
+  return (
+    Math.abs(px - ox) < (pw + ow) / 2 &&
+    Math.abs(py - oy) < (ph + oh) / 2
+  );
+}
+
+function gameOver() {
+  gameState = STATE.OVER;
+  shakeTimer = 20;
+  shakeIntensity = 8;
+  document.getElementById('score-ui').style.color = '#ff4757';
+}
+
+function resetGame() {
+  gameState = STATE.PLAYING;
+  score = 0; coins = 0; speed = 5; distance = 0;
+  player.lane = 1; player.x = W * 0.5; player.y = 0;
+  player.vy = 0; player.jumpState = 0; player.slideTimer = 0;
+  player.animTimer = 0; player.bobOffset = 0;
+  obstacles = []; coinItems = []; particles = [];
+  spawnTimer = 0; spawnInterval = 55; coinSpawnTimer = 0;
+  document.getElementById('score-ui').style.color = '#fff';
+}
+
+// ─── Render ─────────────────────────────────
+function draw() {
+  ctx.clearRect(0, 0, W, H);
+
+  // Shake offset
+  let sx = 0, sy = 0;
+  if (shakeTimer > 0) {
+    sx = (Math.random() - 0.5) * shakeIntensity * (shakeTimer / 20);
+    sy = (Math.random() - 0.5) * shakeIntensity * (shakeTimer / 20);
+  }
+  ctx.save();
+  ctx.translate(sx, sy);
+
+  // Sky gradient
+  const skyGrad = ctx.createLinearGradient(0, 0, 0, H);
+  skyGrad.addColorStop(0, '#87CEEB');
+  skyGrad.addColorStop(0.4, '#E0F7FA');
+  skyGrad.addColorStop(0.7, '#B2DFDB');
+  skyGrad.addColorStop(1, '#4CAF50');
+  ctx.fillStyle = skyGrad;
+  ctx.fillRect(0, 0, W, H);
+
+  // Clouds
+  ctx.fillStyle = 'rgba(255,255,255,0.8)';
+  for (let i = 0; i < 4; i++) {
+    const cx = ((i * W * 0.35 + bgOffset * (0.3 + i * 0.1)) % (W * 1.3)) - W * 0.15;
+    const cy = H * 0.08 + i * H * 0.06;
+    drawCloud(cx, cy, W * (0.08 + i * 0.02));
+  }
+
+  // Background trees (parallax)
+  for (let t of trees) {
+    t.x -= speed * 0.15;
+    if (t.x < -W * 0.3) t.x += W * 1.8;
+    const tx = t.side === 'left' ? t.x : W - t.x;
+    drawTree(tx, H * 0.68, t.h * H);
+  }
+
+  // Road
+  const roadY = H * 0.73;
+  const roadH = H * 0.27;
+
+  // Road surface
+  ctx.fillStyle = '#546E7A';
+  ctx.fillRect(0, roadY, W, roadH);
+  ctx.fillStyle = '#455A64';
+  ctx.fillRect(0, roadY, W, roadH * 0.05);
+
+  // Lane markings
+  const lw = W * LANE_WIDTH_RATIO;
+  for (let li = -1; li <= 1; li++) {
+    const lx = W * 0.5 + li * lw;
+    ctx.strokeStyle = '#FFEB3B';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([W * 0.04, W * 0.06]);
+    ctx.lineDashOffset = -bgOffset * 2;
+    ctx.beginPath();
+    ctx.moveTo(lx, roadY);
+    ctx.lineTo(lx, H);
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
+
+  // Road edges
+  ctx.fillStyle = '#FFEB3B';
+  ctx.fillRect(0, roadY - 2, W, 4);
+  ctx.fillStyle = '#fff';
+  ctx.fillRect(0, roadY, W, 1);
+
+  // Draw obstacles
+  for (let obs of obstacles) {
+    let ox = obs.x;
+    if (obs.lane >= 0) ox = laneX[obs.lane];
+    drawObstacle(ox, obs.y, obs.w, obs.h, obs.type);
+  }
+
+  // Draw coins
+  for (let coin of coinItems) {
+    if (coin.collected) continue;
+    const cx = laneX[coin.lane];
+    drawCoin(cx, coin.y, coin.r);
+  }
+
+  // Draw particles
+  for (let p of particles) {
+    ctx.fillStyle = p.color;
+    ctx.globalAlpha = p.life / 20;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, 3, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+
+  // Draw player (奶龙)
+  const px = player.x;
+  const py = H * 0.7 + player.y + player.bobOffset;
+  const pState = player.jumpState === 1 ? 'jump' : player.jumpState === 2 ? 'slide' : 'run';
+  drawNailong(px, py, Math.min(W, H) * 0.0014, pState);
+
+  // Foreground shadow on road
+  ctx.fillStyle = 'rgba(0,0,0,0.15)';
+  ctx.beginPath();
+  ctx.ellipse(px, H * 0.76, W * 0.06, H * 0.012, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.restore();
+
+  // ─── Overlay UI ────────────────────────────
+  if (gameState === STATE.IDLE) {
+    drawStartScreen();
+  } else if (gameState === STATE.OVER) {
+    drawGameOverScreen();
+  }
+}
+
+function drawCloud(x, y, r) {
+  ctx.beginPath();
+  ctx.arc(x, y, r, 0, Math.PI * 2);
+  ctx.arc(x + r * 0.7, y - r * 0.3, r * 0.6, 0, Math.PI * 2);
+  ctx.arc(x - r * 0.5, y - r * 0.2, r * 0.55, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+function drawTree(x, y, h) {
+  ctx.fillStyle = '#8B4513';
+  ctx.fillRect(x - W * 0.015, y - h * 0.2, W * 0.03, h * 0.3);
+  ctx.fillStyle = '#2E7D32';
+  ctx.beginPath();
+  ctx.moveTo(x, y - h);
+  ctx.lineTo(x - W * 0.06, y);
+  ctx.lineTo(x + W * 0.06, y);
+  ctx.fill();
+  ctx.fillStyle = '#388E3C';
+  ctx.beginPath();
+  ctx.moveTo(x, y - h * 0.7);
+  ctx.lineTo(x - W * 0.045, y - h * 0.1);
+  ctx.lineTo(x + W * 0.045, y - h * 0.1);
+  ctx.fill();
+}
+
+function drawStartScreen() {
+  ctx.fillStyle = 'rgba(0,0,0,0.5)';
+  ctx.fillRect(0, 0, W, H);
+
+  ctx.fillStyle = '#fff';
+  ctx.font = `bold ${W*0.09}px "PingFang SC","Microsoft YaHei",sans-serif`;
+  ctx.textAlign = 'center';
+  ctx.fillText('🐉 奶龙快跑！', W/2, H * 0.32);
+
+  ctx.font = `${W*0.04}px "PingFang SC","Microsoft YaHei",sans-serif`;
+  ctx.fillText('神庙逃亡玩法 · 奶龙版', W/2, H * 0.4);
+
+  // Draw a cute 奶龙 in the middle
+  drawNailong(W/2, H * 0.55, Math.min(W, H) * 0.0018, 'run');
+
+  // Instructions
+  ctx.font = `${W*0.035}px "PingFang SC","Microsoft YaHei",sans-serif`;
+  ctx.fillStyle = '#FFEB3B';
+  ctx.fillText('⬅️ ➡️ 左右滑动切换跑道', W/2, H * 0.72);
+  ctx.fillText('⬆️ 上滑跳跃  ⬇️ 下滑躲避', W/2, H * 0.78);
+
+  // Start button pulse
+  const pulse = Math.sin(Date.now() * 0.005) * 0.15 + 0.85;
+  ctx.fillStyle = `rgba(255,255,255,${pulse})`;
+  ctx.font = `bold ${W*0.05}px "PingFang SC","Microsoft YaHei",sans-serif`;
+  ctx.fillText('👆 点击屏幕开始', W/2, H * 0.88);
+}
+
+function drawGameOverScreen() {
+  ctx.fillStyle = 'rgba(0,0,0,0.6)';
+  ctx.fillRect(0, 0, W, H);
+
+  ctx.fillStyle = '#ff4757';
+  ctx.font = `bold ${W*0.08}px "PingFang SC","Microsoft YaHei",sans-serif`;
+  ctx.textAlign = 'center';
+  ctx.fillText('游戏结束！', W/2, H * 0.28);
+
+  ctx.fillStyle = '#fff';
+  ctx.font = `${W*0.045}px "PingFang SC","Microsoft YaHei",sans-serif`;
+  ctx.fillText(`🏃 跑了 ${Math.floor(distance)} 米`, W/2, H * 0.38);
+  ctx.fillText(`🪙 收集 ${coins} 个金币`, W/2, H * 0.44);
+
+  // High score (stored in memory)
+  const best = parseInt(localStorage.getItem('nailong_best') || '0');
+  if (Math.floor(distance) > best) {
+    localStorage.setItem('nailong_best', Math.floor(distance));
+  }
+  const displayBest = Math.max(best, Math.floor(distance));
+  ctx.fillStyle = '#FFD700';
+  ctx.fillText(`🏆 最佳记录 ${displayBest} 米`, W/2, H * 0.51);
+
+  // Draw sad 奶龙
+  drawNailong(W/2, H * 0.64, Math.min(W, H) * 0.0013, 'run');
+
+  const pulse = Math.sin(Date.now() * 0.005) * 0.15 + 0.85;
+  ctx.fillStyle = `rgba(255,255,255,${pulse})`;
+  ctx.font = `bold ${W*0.045}px "PingFang SC","Microsoft YaHei",sans-serif`;
+  ctx.fillText('👆 点击重新开始', W/2, H * 0.85);
+}
+
+// ─── Input ──────────────────────────────────
+let touchStartX = 0, touchStartY = 0;
+
+canvas.addEventListener('touchstart', e => {
+  e.preventDefault();
+  const t = e.touches[0];
+  touchStartX = t.clientX;
+  touchStartY = t.clientY;
+
+  if (gameState === STATE.IDLE || gameState === STATE.OVER) {
+    resetGame();
+  }
+});
+
+canvas.addEventListener('touchend', e => {
+  if (gameState !== STATE.PLAYING) return;
+  e.preventDefault();
+  const t = e.changedTouches[0];
+  const dx = t.clientX - touchStartX;
+  const dy = t.clientY - touchStartY;
+  const absDx = Math.abs(dx);
+  const absDy = Math.abs(dy);
+
+  if (absDx < 15 && absDy < 15) return; // too small
+
+  if (absDx > absDy) {
+    // Horizontal swipe
+    if (dx > 20 && player.lane < 2) player.lane++;
+    else if (dx < -20 && player.lane > 0) player.lane--;
+  } else {
+    // Vertical swipe
+    if (dy < -20 && player.jumpState === 0) {
+      // Swipe up -> jump
+      player.jumpState = 1;
+      player.vy = -12;
+    } else if (dy > 20 && player.jumpState === 0) {
+      // Swipe down -> slide
+      player.jumpState = 2;
+      player.slideTimer = 25;
+    }
+  }
+});
+
+document.addEventListener('keydown', e => {
+  if (gameState === STATE.IDLE || gameState === STATE.OVER) {
+    resetGame();
+    return;
+  }
+  if (e.key === 'ArrowLeft' && player.lane > 0) player.lane--;
+  if (e.key === 'ArrowRight' && player.lane < 2) player.lane++;
+  if ((e.key === 'ArrowUp' || e.key === 'w') && player.jumpState === 0) {
+    player.jumpState = 1;
+    player.vy = -12;
+  }
+  if ((e.key === 'ArrowDown' || e.key === 's') && player.jumpState === 0) {
+    player.jumpState = 2;
+    player.slideTimer = 25;
+  }
+  e.preventDefault();
+});
+
+// Click for start/restart (non-touch devices)
+canvas.addEventListener('click', () => {
+  if (gameState === STATE.IDLE || gameState === STATE.OVER) {
+    resetGame();
+  }
+});
+
+// ─── Main Loop ──────────────────────────────
+function gameLoop() {
+  update();
+  draw();
+  requestAnimationFrame(gameLoop);
+}
+
+initWorld();
+gameLoop();
+</script>
+</body>
+</html>

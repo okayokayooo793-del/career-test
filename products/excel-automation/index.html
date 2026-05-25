@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Excel 自动化脚本定制 | 摆脱重复操作</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+    background: #f7f8fa; color: #1a1a1a; line-height: 1.6;
+  }
+  .hero {
+    background: linear-gradient(135deg, #0d2818 0%, #134e2a 50%, #217c3e 100%);
+    color: #fff; text-align: center; padding: 44px 20px 36px;
+  }
+  .hero .badge {
+    display: inline-block; background: rgba(255,255,255,0.15); color: #fff;
+    padding: 4px 14px; border-radius: 20px; font-size: 0.78rem; margin-bottom: 14px;
+  }
+  .hero h1 { font-size: 1.7rem; margin-bottom: 6px; }
+  .hero .sub { font-size: 0.88rem; color: #a0d8b0; margin-bottom: 18px; }
+  .hero .highlight { color: #ffd700; font-weight: 700; }
+
+  .container { max-width: 780px; margin: 0 auto; padding: 20px 16px; }
+  .section { margin-bottom: 24px; }
+  .section h2 { font-size: 1.1rem; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+
+  /* Pain points */
+  .pain-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .pain-card {
+    background: #fff; border-radius: 12px; padding: 16px;
+    box-shadow: 0 1px 6px rgba(0,0,0,0.05); border-left: 3px solid #ff4757;
+  }
+  .pain-card h4 { font-size: 0.88rem; margin-bottom: 4px; }
+  .pain-card p { font-size: 0.75rem; color: #888; }
+
+  /* Services */
+  .svc-card {
+    background: #fff; border-radius: 14px; padding: 20px; margin-bottom: 10px;
+    box-shadow: 0 1px 8px rgba(0,0,0,0.05); display: flex; gap: 14px;
+    align-items: flex-start;
+  }
+  .svc-icon {
+    width: 44px; height: 44px; border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.4rem; flex-shrink: 0;
+  }
+  .svc-info { flex: 1; }
+  .svc-info h4 { font-size: 0.92rem; margin-bottom: 2px; }
+  .svc-info p { font-size: 0.78rem; color: #888; }
+  .svc-price { font-weight: 700; font-size: 1rem; color: #217c3e; flex-shrink: 0; }
+
+  /* Demo section */
+  .demo-card {
+    background: #fff; border-radius: 14px; padding: 18px; margin-bottom: 10px;
+    box-shadow: 0 1px 8px rgba(0,0,0,0.05); border-left: 3px solid #217c3e;
+    cursor: pointer; transition: transform 0.2s; text-decoration: none; color: inherit; display: block;
+  }
+  .demo-card:hover { transform: translateX(3px); }
+  .demo-card h4 { font-size: 0.9rem; margin-bottom: 4px; }
+  .demo-card p { font-size: 0.76rem; color: #888; }
+
+  /* CTA */
+  .cta-box {
+    background: linear-gradient(135deg, #217c3e, #1a5c30); color: #fff;
+    border-radius: 14px; padding: 28px 20px; text-align: center;
+  }
+  .cta-box h3 { font-size: 1.2rem; margin-bottom: 6px; }
+  .cta-box p { font-size: 0.85rem; opacity: 0.85; margin-bottom: 16px; }
+  .cta-box .btn {
+    display: inline-block; padding: 12px 32px; background: #fff; color: #217c3e;
+    border-radius: 10px; font-weight: 700; text-decoration: none; font-size: 0.95rem;
+  }
+
+  /* FAQ */
+  .faq-item {
+    background: #fff; border-radius: 10px; padding: 14px 16px;
+    margin-bottom: 6px; box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+  }
+  .faq-item h4 { font-size: 0.88rem; margin-bottom: 2px; }
+  .faq-item p { font-size: 0.78rem; color: #888; }
+
+  @media (max-width: 480px) {
+    .hero h1 { font-size: 1.3rem; }
+    .pain-grid { grid-template-columns: 1fr; }
+    .svc-card { flex-direction: column; }
+  }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="badge">⏱️ 节省 80% 重复工作时间</div>
+  <h1>Excel 自动化脚本定制</h1>
+  <p class="sub">你说痛点 · 我写脚本 · <span class="highlight">10 分钟省 8 小时</span></p>
+</div>
+
+<div class="container">
+
+  <!-- Pain Points -->
+  <div class="section">
+    <h2>😫 你还在手动做这些吗？</h2>
+    <div class="pain-grid">
+      <div class="pain-card"><h4>🔴 每天手动合并表格</h4><p>10 个部门报表复制粘贴到一张表，每天花 1 小时</p></div>
+      <div class="pain-card"><h4>🔴 周报月报重复做</h4><p>每周从原始数据汇总、算数、画图，做 PPT 要半天</p></div>
+      <div class="pain-card"><h4>🔴 数据分类全靠人工</h4><p>几千条数据一条条看，分门别类，眼花还容易错</p></div>
+      <div class="pain-card"><h4>🔴 跨系统搬数据</h4><p>从 ERP/网页里导出再导入 Excel，来回倒腾</p></div>
+    </div>
+  </div>
+
+  <!-- Services -->
+  <div class="section">
+    <h2>🛠️ 我帮你搞定</h2>
+    <div class="svc-card">
+      <div class="svc-icon" style="background:#e8f5e9">📑</div>
+      <div class="svc-info"><h4>多表合并脚本</h4><p>自动读取文件夹内所有 Excel，按规则合并、去重、格式化输出</p></div>
+      <div class="svc-price">¥200-500</div>
+    </div>
+    <div class="svc-card">
+      <div class="svc-icon" style="background:#fff3e0">📊</div>
+      <div class="svc-info"><h4>自动报表生成</h4><p>从原始数据一键生成汇总表+统计图表+Word/PPT 报告</p></div>
+      <div class="svc-price">¥300-800</div>
+    </div>
+    <div class="svc-card">
+      <div class="svc-icon" style="background:#e3f2fd">🏷️</div>
+      <div class="svc-info"><h4>智能数据分类</h4><p>按自定义规则自动分类、标注标签、异常检测告警</p></div>
+      <div class="svc-price">¥200-600</div>
+    </div>
+    <div class="svc-card">
+      <div class="svc-icon" style="background:#fce4ec">🔗</div>
+      <div class="svc-info"><h4>跨系统数据同步</h4><p>网页数据抓取→Excel / ERP数据→报表 / 多系统间数据互通</p></div>
+      <div class="svc-price">¥300-1000</div>
+    </div>
+    <div class="svc-card">
+      <div class="svc-icon" style="background:#f3e5f5">🤖</div>
+      <div class="svc-info"><h4>全自动工作流</h4><p>定时执行+邮件发送+异常告警，设置一次永久自动运行</p></div>
+      <div class="svc-price">¥500-1500</div>
+    </div>
+  </div>
+
+  <!-- Demo area -->
+  <div class="section">
+    <h2>💻 案例演示</h2>
+    <a class="demo-card" href="demos/" target="_blank">
+      <h4>📑 案例 1：多 Excel 文件合并</h4>
+      <p>读取文件夹内 50+ 个 Excel，按列匹配自动合并，3 秒完成手动 2 小时的工作</p>
+    </a>
+    <a class="demo-card" href="demos/" target="_blank">
+      <h4>📊 案例 2：销售数据自动汇总报告</h4>
+      <p>从每日销售记录生成月度统计表+趋势图表+Top 10 产品排名，一键输出</p>
+    </a>
+    <a class="demo-card" href="demos/" target="_blank">
+      <h4>🏷️ 案例 3：客户数据智能分类</h4>
+      <p>根据金额、频率、地区自动将客户分为 ABCD 等级，标记异常大额交易</p>
+    </a>
+  </div>
+
+  <!-- CTA -->
+  <div class="cta-box">
+    <h3>📩 告诉我你的需求</h3>
+    <p>描述你的痛点 → 我评估工作量 → 报价 → 交付脚本<br>简单需求当天交付，复杂需求 2-3 天</p>
+    <a class="btn" href="#contact">立即咨询</a>
+  </div>
+
+  <!-- Contact -->
+  <div class="section" id="contact" style="text-align:center;padding:20px 0;">
+    <h2>📬 联系我</h2>
+    <p style="color:#888;font-size:0.85rem;">闲鱼搜索「Excel 自动化脚本定制」或直接扫码</p>
+    <div style="width:160px;height:160px;background:#f0f0f0;margin:12px auto;border-radius:10px;display:flex;align-items:center;justify-content:center;color:#999;font-size:0.8rem;flex-direction:column;gap:4px;">
+      <span style="font-size:2rem;">💬</span><span>闲鱼二维码</span>
+    </div>
+    <p style="font-size:0.72rem;color:#aaa;">⚠️ 换成你的闲鱼/微信二维码</p>
+  </div>
+
+  <!-- FAQ -->
+  <div class="section">
+    <h2>❓ 常见问题</h2>
+    <div class="faq-item"><h4>需要我安装什么软件吗？</h4><p>不需要。我交付的是一个双击就能运行的 exe 文件，或者一个简单的 Python 脚本（配详细使用说明），不需要你装任何编程环境。</p></div>
+    <div class="faq-item"><h4>数据安全吗？</h4><p>脚本在你电脑上本地运行，数据不会上传到任何地方。可以签保密协议。</p></div>
+    <div class="faq-item"><h4>能处理多大的数据？</h4><p>10 万行以内的 Excel 秒级完成。更大的数据量可以用数据库方案，同样能搞定。</p></div>
+    <div class="faq-item"><h4>不满意能改吗？</h4><p>交付后 7 天内免费修改，直到满足你的需求为止。</p></div>
+  </div>
+
+  <p style="text-align:center;color:#ccc;font-size:0.7rem;padding:20px 0;">© 2025 Excel 自动化脚本定制 · 让电脑替你干活</p>
+</div>
+
+</body>
+</html>

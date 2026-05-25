@@ -1,0 +1,735 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>AI 简历打分 - 智能优化你的简历</title>
+<style>
+  :root {
+    --bg: #0a0e17;
+    --surface: rgba(255,255,255,0.025);
+    --border: rgba(255,255,255,0.06);
+    --text: #e8eaed;
+    --text2: #9aa0a6;
+    --blue: #4a90ff;
+    --blue2: #2962ff;
+    --gold: #f5a623;
+    --gold2: #e8961a;
+    --green: #34a853;
+    --red: #ea4335;
+    --purple: #a855f7;
+    --radius: 18px;
+    --radius-sm: 12px;
+    --trans: 0.3s cubic-bezier(0.25, 0.8, 0.25, 1.2);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100dvh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    -webkit-font-smoothing: antialiased;
+    padding: 16px;
+  }
+  .bg-ambient {
+    position: fixed; inset: 0; pointer-events: none; z-index: 0;
+  }
+  .bg-orb {
+    position: absolute; border-radius: 50%; filter: blur(130px); opacity: 0.08;
+    animation: orbFloat 22s ease-in-out infinite;
+  }
+  .bg-orb:nth-child(1) { width: 500px; height: 500px; background: var(--blue); top: -150px; left: -150px; }
+  .bg-orb:nth-child(2) { width: 400px; height: 400px; background: var(--purple); bottom: -150px; right: -100px; animation-delay: -8s; }
+  .bg-orb:nth-child(3) { width: 350px; height: 350px; background: var(--gold); top: 50%; left: 40%; animation-delay: -15s; }
+  @keyframes orbFloat {
+    0%,100% { transform: translate(0,0) scale(1); }
+    33% { transform: translate(50px,-50px) scale(1.1); }
+    66% { transform: translate(-30px,30px) scale(0.9); }
+  }
+  .app { position: relative; z-index: 1; width: 100%; max-width: 680px; }
+  .screen { display: none; }
+  .screen.active { display: block; }
+  .card {
+    background: var(--surface); backdrop-filter: blur(30px); -webkit-backdrop-filter: blur(30px);
+    border: 1px solid var(--border); border-radius: var(--radius); padding: 36px 32px;
+    animation: cardIn 0.45s ease;
+  }
+  @keyframes cardIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+  .logo { text-align: center; margin-bottom: 24px; }
+  .logo-icon {
+    width: 64px; height: 64px; margin: 0 auto 16px;
+    background: linear-gradient(135deg, var(--blue), var(--purple));
+    border-radius: 18px; display: flex; align-items: center; justify-content: center;
+    font-size: 30px; box-shadow: 0 12px 36px rgba(74,144,255,0.2);
+  }
+  .title {
+    font-size: 1.8rem; font-weight: 700; text-align: center; letter-spacing: -0.5px;
+    background: linear-gradient(135deg, #e8eaed 0%, #bdc1c6 50%, #8ab4f8 100%);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  }
+  .subtitle { text-align: center; color: var(--text2); font-size: 0.88rem; line-height: 1.7; margin-bottom: 28px; }
+
+  .feat-row { display: flex; gap: 8px; margin-bottom: 28px; }
+  .feat-tag {
+    flex: 1; text-align: center; padding: 10px 6px; border-radius: 20px;
+    font-size: 0.72rem; color: var(--text2);
+    background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05);
+  }
+
+  .btn {
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    width: 100%; padding: 15px 24px; border: none; border-radius: var(--radius-sm);
+    font-size: 1rem; font-weight: 600; cursor: pointer; font-family: inherit;
+    letter-spacing: 0.3px; transition: var(--trans);
+  }
+  .btn-primary {
+    background: linear-gradient(135deg, var(--blue), var(--blue2));
+    color: #fff; box-shadow: 0 8px 28px rgba(74,144,255,0.25);
+  }
+  .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 14px 38px rgba(74,144,255,0.35); }
+  .btn-primary:active { transform: scale(0.98); }
+  .btn-gold {
+    background: linear-gradient(135deg, var(--gold), var(--gold2));
+    color: #1a1a1a; box-shadow: 0 8px 28px rgba(245,166,35,0.3);
+  }
+  .btn-gold:hover { transform: translateY(-2px); box-shadow: 0 14px 38px rgba(245,166,35,0.4); }
+  .btn-outline {
+    background: transparent; border: 2px solid rgba(255,255,255,0.15); color: #ccc;
+  }
+  .btn-sm { padding: 10px 20px; font-size: 0.85rem; }
+
+  /* Input screen */
+  .input-tabs { display: flex; gap: 4px; margin-bottom: 16px; background: rgba(255,255,255,0.03); border-radius: 10px; padding: 4px; }
+  .input-tab {
+    flex: 1; padding: 10px; border: none; border-radius: 8px; cursor: pointer;
+    font-size: 0.82rem; font-family: inherit; color: var(--text2);
+    background: transparent; transition: var(--trans);
+  }
+  .input-tab.active { background: rgba(74,144,255,0.12); color: var(--blue); font-weight: 600; }
+  .resume-textarea {
+    width: 100%; min-height: 240px; padding: 16px; border-radius: var(--radius-sm);
+    background: rgba(255,255,255,0.03); border: 2px solid rgba(255,255,255,0.08);
+    color: var(--text); font-size: 0.9rem; font-family: inherit; line-height: 1.7;
+    resize: vertical; transition: var(--trans); outline: none;
+  }
+  .resume-textarea:focus { border-color: rgba(74,144,255,0.4); }
+  .resume-textarea::placeholder { color: rgba(255,255,255,0.2); }
+  .file-upload {
+    display: flex; align-items: center; justify-content: center; gap: 10px;
+    min-height: 180px; border: 2px dashed rgba(255,255,255,0.1); border-radius: var(--radius-sm);
+    cursor: pointer; transition: var(--trans); color: var(--text2); font-size: 0.88rem;
+  }
+  .file-upload:hover { border-color: rgba(74,144,255,0.3); background: rgba(74,144,255,0.03); }
+  .file-info { display: none; text-align: center; padding: 20px; }
+  .file-info.active { display: block; }
+  .file-name { font-weight: 600; color: var(--blue); margin-bottom: 6px; }
+  .file-size { font-size: 0.78rem; color: var(--text2); }
+
+  /* Analyzing */
+  .analyze-wrap { text-align: center; padding: 30px 0; }
+  .scan-ring {
+    width: 72px; height: 72px; margin: 0 auto 20px; position: relative;
+  }
+  .scan-ring svg { animation: spin 2s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .scan-icon { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 26px; }
+  .scan-items { font-size: 0.75rem; color: var(--text2); margin-top: 4px; }
+  .scan-item { margin: 4px 0; opacity: 0.4; transition: opacity 0.3s; }
+  .scan-item.done { opacity: 1; color: var(--green); }
+
+  /* Result */
+  .score-hero { text-align: center; margin-bottom: 24px; }
+  .score-circle {
+    width: 140px; height: 140px; margin: 0 auto 12px; position: relative;
+  }
+  .score-circle svg { transform: rotate(-90deg); }
+  .score-value {
+    position: absolute; inset: 0; display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+  }
+  .score-num { font-size: 3rem; font-weight: 800; line-height: 1; }
+  .score-label { font-size: 0.75rem; color: var(--text2); margin-top: 2px; }
+  .score-grade { font-size: 1rem; font-weight: 600; margin-top: 8px; }
+
+  .dim-list { margin-bottom: 20px; }
+  .dim-row {
+    display: flex; align-items: center; gap: 12px; padding: 12px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.03);
+  }
+  .dim-icon {
+    width: 34px; height: 34px; border-radius: 9px; display: flex;
+    align-items: center; justify-content: center; font-size: 15px; flex-shrink: 0;
+  }
+  .dim-info { flex: 1; min-width: 0; }
+  .dim-name { font-size: 0.85rem; font-weight: 500; }
+  .dim-tip { font-size: 0.7rem; color: var(--text2); margin-top: 2px; }
+  .dim-score { font-weight: 700; font-size: 0.95rem; flex-shrink: 0; }
+  .dim-bar {
+    height: 4px; background: rgba(255,255,255,0.06); border-radius: 2px;
+    margin-top: 5px; overflow: hidden;
+  }
+  .dim-bar-fill { height: 100%; border-radius: 2px; transition: width 1.2s ease; }
+
+  .tips-section { margin-bottom: 20px; }
+  .tips-section h3 {
+    font-size: 0.85rem; color: var(--text2); text-transform: uppercase;
+    letter-spacing: 1px; margin-bottom: 12px;
+  }
+  .tip-item {
+    display: flex; gap: 10px; padding: 10px 14px;
+    background: rgba(255,255,255,0.015); border-radius: 10px;
+    margin-bottom: 8px; font-size: 0.85rem; line-height: 1.6;
+  }
+  .tip-num {
+    width: 22px; height: 22px; border-radius: 50%;
+    background: rgba(74,144,255,0.15); color: var(--blue);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.7rem; font-weight: 700; flex-shrink: 0; margin-top: 2px;
+  }
+
+  .premium-lock {
+    position: relative; margin-top: 16px; padding: 24px; border-radius: var(--radius-sm);
+    background: rgba(245,166,35,0.04); border: 1px solid rgba(245,166,35,0.15);
+    text-align: center; overflow: hidden;
+  }
+  .premium-lock::before {
+    content: ''; position: absolute; inset: 0;
+    background: linear-gradient(180deg, transparent 0%, rgba(10,14,23,0.8) 100%);
+    pointer-events: none;
+  }
+  .premium-preview {
+    filter: blur(6px); user-select: none; pointer-events: none;
+    opacity: 0.5;
+  }
+  .premium-cta {
+    position: relative; z-index: 1; padding-top: 8px;
+  }
+  .premium-cta h3 { font-size: 1.05rem; margin-bottom: 6px; color: var(--gold); }
+  .premium-cta p { font-size: 0.8rem; color: var(--text2); margin-bottom: 16px; }
+  .price-tag { font-size: 1.5rem; font-weight: 800; color: var(--gold); }
+
+  .modal-overlay {
+    display: none; position: fixed; inset: 0; z-index: 100;
+    background: rgba(0,0,0,0.7); align-items: center; justify-content: center;
+  }
+  .modal-overlay.active { display: flex; }
+  .modal {
+    background: #141820; border: 1px solid rgba(255,255,255,0.1);
+    border-radius: var(--radius); padding: 28px 24px; max-width: 360px;
+    width: 90%; text-align: center;
+  }
+  .modal h3 { margin-bottom: 8px; }
+  .modal p { font-size: 0.82rem; color: var(--text2); margin-bottom: 20px; line-height: 1.6; }
+  .pay-qr {
+    width: 160px; height: 160px; margin: 0 auto 16px;
+    background: #fff; border-radius: 12px; display: flex;
+    align-items: center; justify-content: center; font-size: 0.75rem;
+    color: #999; flex-direction: column; gap: 6px;
+  }
+  .pay-methods { display: flex; gap: 8px; margin-bottom: 16px; }
+  .pay-btn {
+    flex: 1; padding: 10px; border-radius: 8px; border: 2px solid rgba(255,255,255,0.08);
+    background: rgba(255,255,255,0.02); color: var(--text); cursor: pointer;
+    font-family: inherit; font-size: 0.82rem; transition: var(--trans);
+  }
+  .pay-btn.active { border-color: var(--blue); background: rgba(74,144,255,0.08); }
+
+  .btn-close {
+    margin-top: 8px; background: none; border: none; color: var(--text2);
+    cursor: pointer; font-size: 0.8rem; font-family: inherit;
+  }
+
+  @media (max-width: 480px) {
+    .card { padding: 22px 16px; }
+    .title { font-size: 1.4rem; }
+    .feat-row { flex-wrap: wrap; }
+    .feat-tag { flex: none; width: 47%; }
+    .score-num { font-size: 2.4rem; }
+  }
+</style>
+</head>
+<body>
+<div class="bg-ambient">
+  <div class="bg-orb"></div><div class="bg-orb"></div><div class="bg-orb"></div>
+</div>
+
+<div class="app" id="app">
+
+  <!-- INPUT SCREEN -->
+  <div class="screen active" id="screen-input">
+    <div class="card">
+      <div class="logo">
+        <div class="logo-icon">📄</div>
+        <h1 class="title">AI 简历打分</h1>
+        <p class="subtitle">上传简历或粘贴内容，AI 从 6 个维度<br>深度分析并给出优化建议</p>
+      </div>
+      <div class="feat-row">
+        <div class="feat-tag">🔍 完整度分析</div>
+        <div class="feat-tag">📊 结构评估</div>
+        <div class="feat-tag">🎯 量化检测</div>
+        <div class="feat-tag">🏷️ 关键词优化</div>
+      </div>
+
+      <div class="input-tabs">
+        <button class="input-tab active" onclick="switchInput('paste')" id="tab-paste">📝 粘贴内容</button>
+        <button class="input-tab" onclick="switchInput('file')" id="tab-file">📂 上传文件</button>
+      </div>
+
+      <div id="area-paste">
+        <textarea class="resume-textarea" id="resume-text" placeholder="在此粘贴你的简历内容...
+包含：个人信息、教育背景、工作/实习经历、项目经验、技能证书等，越完整分析越准确"></textarea>
+      </div>
+      <div id="area-file" style="display:none">
+        <div class="file-upload" id="file-drop" onclick="document.getElementById('file-input').click()">
+          <div class="file-info" id="file-placeholder">
+            <div style="font-size:2rem;margin-bottom:8px;">📁</div>
+            点击选择文件或拖拽到此处<br>
+            <span style="font-size:0.72rem;color:rgba(255,255,255,0.2)">支持 .txt 文件</span>
+          </div>
+          <div class="file-info" id="file-loaded">
+            <div style="font-size:2rem;margin-bottom:8px;">✅</div>
+            <div class="file-name" id="file-name"></div>
+            <div class="file-size" id="file-size"></div>
+          </div>
+        </div>
+        <input type="file" id="file-input" accept=".txt" style="display:none" onchange="handleFile(event)">
+      </div>
+
+      <button class="btn btn-primary" style="margin-top:20px" onclick="startAnalyze()">
+        <span>🔍 开始分析</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- ANALYZING SCREEN -->
+  <div class="screen" id="screen-analyzing">
+    <div class="card">
+      <div class="analyze-wrap">
+        <div class="scan-ring">
+          <svg width="72" height="72" viewBox="0 0 72 72">
+            <circle cx="36" cy="36" r="30" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="4"/>
+            <circle cx="36" cy="36" r="30" fill="none" stroke="url(#scanGrad)" stroke-width="4" stroke-dasharray="120 68" stroke-linecap="round"/>
+            <defs><linearGradient id="scanGrad" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#4a90ff"/><stop offset="100%" stop-color="#a855f7"/></linearGradient></defs>
+          </svg>
+          <div class="scan-icon">🤖</div>
+        </div>
+        <p style="font-weight:500;">AI 正在分析你的简历<span id="scan-dots"></span></p>
+        <div class="scan-items">
+          <div class="scan-item" id="s1">⏳ 检查信息完整性...</div>
+          <div class="scan-item" id="s2">⏳ 评估结构清晰度...</div>
+          <div class="scan-item" id="s3">⏳ 检测量化成果...</div>
+          <div class="scan-item" id="s4">⏳ 分析关键词覆盖...</div>
+          <div class="scan-item" id="s5">⏳ 评估语言表达...</div>
+          <div class="scan-item" id="s6">⏳ 综合生成报告...</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RESULT SCREEN -->
+  <div class="screen" id="screen-result">
+    <div class="card" id="result-card"></div>
+  </div>
+
+  <!-- PAYMENT MODAL -->
+  <div class="modal-overlay" id="pay-modal">
+    <div class="modal">
+      <h3>🔓 解锁完整优化报告</h3>
+      <p>获得 6 大维度详细分析 + 针对性修改建议<br>+ 行业关键词推荐 + 优化模板</p>
+      <div class="pay-methods">
+        <button class="pay-btn active" onclick="switchPay('wechat', this)">💚 微信支付</button>
+        <button class="pay-btn" onclick="switchPay('alipay', this)">💙 支付宝</button>
+      </div>
+      <div class="pay-qr" id="pay-qr">
+        <div style="font-size:1.5rem;">💰</div>
+        <div>¥9.90</div>
+        <div style="font-size:0.65rem;">扫码支付</div>
+      </div>
+      <p style="font-size:0.7rem;color:var(--text2);margin-bottom:12px;">
+        ⚠️ 此处需替换为真实收款二维码<br>
+        推荐使用 <b>面包多</b> / <b>PayJS</b> 生成支付链接
+      </p>
+      <button class="btn btn-gold btn-sm" onclick="simulatePay()">💰 我已支付，解锁报告</button>
+      <button class="btn-close" onclick="closePayModal()">暂不升级</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ─── Input Tabs ────────────────────────────
+function switchInput(type) {
+  document.getElementById('area-paste').style.display = type === 'paste' ? 'block' : 'none';
+  document.getElementById('area-file').style.display = type === 'file' ? 'block' : 'none';
+  document.getElementById('tab-paste').classList.toggle('active', type === 'paste');
+  document.getElementById('tab-file').classList.toggle('active', type === 'file');
+  if (type === 'file') { document.getElementById('resume-text').value = ''; }
+  if (type === 'paste') { document.getElementById('file-input').value = ''; resetFileUI(); }
+}
+
+function handleFile(e) {
+  const file = e.target.files[0];
+  if (!file) { resetFileUI(); return; }
+  document.getElementById('file-placeholder').style.display = 'none';
+  document.getElementById('file-loaded').classList.add('active');
+  document.getElementById('file-name').textContent = file.name;
+  document.getElementById('file-size').textContent = (file.size / 1024).toFixed(1) + ' KB';
+  const reader = new FileReader();
+  reader.onload = function(ev) { document.getElementById('resume-text').value = ev.target.result; };
+  reader.readAsText(file);
+}
+
+function resetFileUI() {
+  document.getElementById('file-placeholder').style.display = '';
+  document.getElementById('file-loaded').classList.remove('active');
+}
+
+// Drop handler
+document.addEventListener('DOMContentLoaded', () => {
+  const drop = document.getElementById('file-drop');
+  drop.addEventListener('dragover', e => { e.preventDefault(); drop.style.borderColor = 'rgba(74,144,255,0.5)'; });
+  drop.addEventListener('dragleave', () => { drop.style.borderColor = ''; });
+  drop.addEventListener('drop', e => {
+    e.preventDefault(); drop.style.borderColor = '';
+    const file = e.dataTransfer.files[0];
+    if (file) {
+      const dt = new DataTransfer(); dt.items.add(file);
+      document.getElementById('file-input').files = dt.files;
+      handleFile({ target: document.getElementById('file-input') });
+    }
+  });
+});
+
+// ─── Screen Management ─────────────────────
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  const el = document.getElementById(id);
+  el.classList.add('active');
+  const card = el.querySelector('.card');
+  if (card) { card.style.animation = 'none'; card.offsetHeight; card.style.animation = ''; }
+}
+
+// ─── Analyzing Animation ───────────────────
+function startAnalyze() {
+  const text = document.getElementById('resume-text').value.trim();
+  if (text.length < 40) {
+    alert('请粘贴至少 40 字以上的简历内容，内容越详细分析越准确。');
+    return;
+  }
+  showScreen('screen-analyzing');
+  const items = ['s1','s2','s3','s4','s5','s6'];
+  items.forEach((id, i) => {
+    setTimeout(() => { document.getElementById(id).classList.add('done'); document.getElementById(id).textContent = '✅ ' + document.getElementById(id).textContent.replace('⏳ ',''); }, (i + 1) * 500);
+  });
+
+  // Dots animation
+  let n = 0;
+  const dotsEl = document.getElementById('scan-dots');
+  const dotsTimer = setInterval(() => { n = (n + 1) % 4; dotsEl.textContent = '.'.repeat(n); }, 400);
+
+  setTimeout(() => {
+    clearInterval(dotsTimer);
+    showResult(text);
+  }, 3800);
+}
+
+// ─── Scoring Engine ────────────────────────
+const sections = [
+  { name: '个人信息', patterns: [/姓名|手机|电话|邮箱|Email|地址|年龄|性别|籍贯/] },
+  { name: '求职意向', patterns: [/求职|应聘|意向|期望|目标职位|期望薪资/] },
+  { name: '教育背景', patterns: [/学校|大学|学院|学历|专业|本科|硕士|博士|毕业|GPA|成绩/] },
+  { name: '工作经历', patterns: [/公司|工作|经历|任职|负责|担任|在职|入职|离职/] },
+  { name: '项目经验', patterns: [/项目|Project|负责|参与|主导|完成|上线|交付/] },
+  { name: '技能', patterns: [/技能|掌握|熟练|精通|了解|技术|语言|工具|软件/] },
+  { name: '证书/荣誉', patterns: [/证书|奖|荣誉|通过|获得|考取|资格/] },
+  { name: '自我评价', patterns: [/自我评价|个人评价|自我介绍|自述|总结/] },
+];
+
+function analyzeResume(text) {
+  const results = {};
+  const len = text.length;
+
+  // 1. Content Completeness (25分)
+  let foundSections = 0;
+  const sectionDetails = [];
+  sections.forEach(s => {
+    const found = s.patterns.some(p => p.test(text));
+    if (found) foundSections++;
+    sectionDetails.push({ name: s.name, found });
+  });
+  const completeness = Math.min(25, Math.round((foundSections / sections.length) * 25));
+  results.completeness = { score: completeness, max: 25, foundSections, sectionDetails };
+
+  // 2. Structure Clarity (15分)
+  const hasLineBreaks = (text.match(/\n\n+/g) || []).length >= 2;
+  const hasBullets = /[•\-\*●◆▸▪️✅]/.test(text) || /^\s*[\-\*]\s/m.test(text);
+  const hasHeaders = /[：:]\s*$/.test(text) || /【.+】/.test(text) || /\n[^\n]{2,10}[：:]/g.test(text);
+  let structureScore = 5;
+  if (hasLineBreaks) structureScore += 4;
+  if (hasBullets) structureScore += 3;
+  if (hasHeaders) structureScore += 3;
+  results.structure = { score: Math.min(15, structureScore), max: 15, hasLineBreaks, hasBullets, hasHeaders };
+
+  // 3. Quantified Achievements (20分)
+  const numbers = text.match(/\d+/g) || [];
+  const percentages = (text.match(/\d+%/g) || []).length;
+  const metrics = (text.match(/提升|增长|降低|减少|节省|增加|完成|达成|超过|突破|翻倍/g) || []).length;
+  const numScore = Math.min(8, Math.floor(numbers.length / 3));
+  const pctScore = Math.min(6, percentages * 2);
+  const metricScore = Math.min(6, metrics);
+  results.quantified = { score: numScore + pctScore + metricScore, max: 20, numCount: numbers.length, pctCount: percentages, metricCount: metrics };
+
+  // 4. Keyword Optimization (15分)
+  const actionVerbs = ['负责','主导','领导','协调','管理','设计','开发','实现','优化','提升','降低','建立','推动','策划','组织','分析','制定','执行','完成','达成','突破','创新'];
+  const verbCount = actionVerbs.filter(v => text.includes(v)).length;
+  const industryKeywords = ['数据分析','项目管理','团队协作','用户增长','产品设计','用户体验','运营','市场','销售','技术','算法','架构','测试','部署','运维','AI','Python','Java','SQL','Excel','PPT'];
+  const kwCount = industryKeywords.filter(k => text.includes(k)).length;
+  results.keywords = { score: Math.min(15, Math.round(verbCount * 0.5 + kwCount * 0.5)), max: 15, verbCount, kwCount };
+
+  // 5. Language Expression (15分)
+  const avgSentence = len / Math.max(1, (text.match(/[。\.！!；;]/g) || []).length);
+  const hasGoodLength = avgSentence > 15 && avgSentence < 120;
+  const hasPronouns = /我/g.test(text);
+  const tooManyI = (text.match(/我/g) || []).length > 8;
+  const hasJargon = /赋能|闭环|打法|抓手|沉淀|输出|对齐|落地|复盘|体系|策略|方案|架构/g.test(text);
+  let langScore = 5;
+  if (hasGoodLength) langScore += 5;
+  if (!tooManyI) langScore += 3;
+  if (hasJargon) langScore += 2;
+  results.language = { score: Math.min(15, langScore), max: 15, hasGoodLength, tooManyI, hasJargon };
+
+  // 6. Format & Layout (10分)
+  const totalLines = text.split('\n').length;
+  const avgLineLen = len / Math.max(1, totalLines);
+  const hasGoodFormat = avgLineLen > 10 && avgLineLen < 80;
+  const hasProperSpacing = (text.match(/\n\s*\n/g) || []).length >= 1;
+  let formatScore = 3;
+  if (hasGoodFormat) formatScore += 4;
+  if (hasProperSpacing) formatScore += 3;
+  results.format = { score: Math.min(10, formatScore), max: 10, hasGoodFormat, hasProperSpacing };
+
+  results.total = Math.round(
+    results.completeness.score + results.structure.score +
+    results.quantified.score + results.keywords.score +
+    results.language.score + results.format.score
+  );
+
+  return results;
+}
+
+function generateTips(r) {
+  const tips = [];
+  if (r.completeness.score < 20) tips.push({ text: '建议补充完整的信息模块，确保包含个人信息、教育背景、工作经历、项目经验和技能证书这 5 大核心模块。', pri: 1 });
+  if (r.structure.score < 10) tips.push({ text: '使用项目符号(•)或编号来组织经历描述，每个模块之间用空行分隔，让简历层次更分明。', pri: 1 });
+  if (r.quantified.score < 10) tips.push({ text: '工作成果尽量用数字量化，比如"提升用户留存率 15%"比"提升了用户留存"更有说服力。', pri: 1 });
+  if (r.keywords.score < 8) tips.push({ text: '使用更多行业关键词和动作动词（如"主导""优化""推动"），有助于通过 HR 系统的自动筛选。', pri: 2 });
+  if (r.language.score < 10) tips.push({ text: '减少"我"字使用频率，用客观陈述代替主观评价，保持语言简洁有力、条理清晰。', pri: 2 });
+  if (r.format.score < 6) tips.push({ text: '控制每行字数在 20-60 字之间，善用空格和分段让版面呼吸感更好。', pri: 3 });
+  if (tips.length < 3) tips.push({ text: '整体结构不错！建议在自我评价中突出 2-3 个核心竞争优势，用具体事例支撑。', pri: 3 });
+  return tips.slice(0, 4);
+}
+
+function generatePremiumTips(r) {
+  const all = [];
+  // Completeness deep dive
+  r.completeness.sectionDetails.filter(s => !s.found).forEach(s => {
+    all.push({ dim: '内容完整性', text: `缺少「${s.name}」模块，建议补充。这是 HR 筛选简历时的必看信息。`, icon: '📋' });
+  });
+  if (r.completeness.foundSections >= 7) all.push({ dim: '内容完整性', text: '信息模块非常完整，继续保持。可以考虑在求职意向中更精准地描述目标岗位。', icon: '📋' });
+
+  // Structure
+  if (!r.structure.hasBullets) all.push({ dim: '结构清晰度', text: '建议添加项目符号(•)来组织工作经历和项目经验，让信息层次一目了然。', icon: '📐' });
+  if (!r.structure.hasHeaders) all.push({ dim: '结构清晰度', text: '使用【教育背景】【工作经历】等标题分隔不同板块，便于 HR 快速定位关键信息。', icon: '📐' });
+
+  // Quantified
+  if (r.quantified.pctCount < 2) all.push({ dim: '量化成果', text: '建议为每个工作成果添加具体数据，例如"提升效率 20%""节省成本 5 万元"等。', icon: '📊' });
+  if (r.quantified.metricCount < 3) all.push({ dim: '量化成果', text: '多用"提升""增长""降低""节省"等结果导向词汇，配合数据让成果更有冲击力。', icon: '📊' });
+
+  // Keywords
+  all.push({ dim: '关键词优化', text: `检测到 ${r.keywords.verbCount} 个动作动词和 ${r.keywords.kwCount} 个行业关键词。建议增加到 8+ 动词、10+ 行业词以通过 ATS 筛选系统。`, icon: '🏷️' });
+  if (r.keywords.score < 10) all.push({ dim: '关键词优化', text: '从目标职位的 JD 中提取高频关键词（技能、工具、方法论），融入你的经历描述中。', icon: '🏷️' });
+
+  // Language
+  if (r.language.tooManyI) all.push({ dim: '语言表达', text: '简历中"我"字使用过多(>8次)，建议使用无主语句式，如"负责XX项目，实现YY增长"。', icon: '✍️' });
+
+  // Format
+  if (!r.format.hasGoodFormat) all.push({ dim: '格式排版', text: '每行长度（20-60字）不够理想，过长的句子让阅读困难，过短则显得信息碎片化。', icon: '📄' });
+  if (!r.format.hasProperSpacing) all.push({ dim: '格式排版', text: '不同模块之间应有明显空行，建议在每段经历之间增加一个空行提升版面呼吸感。', icon: '📄' });
+
+  // Keyword recommendations
+  const hotKeywords = ['数据分析','用户增长','项目管理','跨部门协作','流程优化','成本控制','团队管理','市场拓展','产品迭代','客户成功'];
+  all.push({ dim: '行业关键词推荐', text: `当前行业热门关键词：${hotKeywords.join('、')}。根据目标岗位选取 3-5 个融入简历。`, icon: '🔥' });
+
+  return all;
+}
+
+// ─── Result Render ─────────────────────────
+let currentResults = null;
+let isPremium = false;
+
+function showResult(text) {
+  currentResults = analyzeResume(text);
+  isPremium = false;
+  renderResult();
+}
+
+function renderResult() {
+  const r = currentResults;
+  const grade = r.total >= 85 ? '优秀' : r.total >= 70 ? '良好' : r.total >= 55 ? '一般' : '需优化';
+  const gradeColor = r.total >= 85 ? 'var(--green)' : r.total >= 70 ? 'var(--blue)' : r.total >= 55 ? 'var(--gold)' : 'var(--red)';
+  const tips = generateTips(r);
+  const premiumTips = generatePremiumTips(r);
+
+  const circumference = 2 * Math.PI * 54;
+  const dashOffset = circumference - (r.total / 100) * circumference;
+
+  const dims = [
+    { key: 'completeness', name: '内容完整性', icon: '📋', color: '#4a90ff' },
+    { key: 'structure', name: '结构清晰度', icon: '📐', color: '#a855f7' },
+    { key: 'quantified', name: '量化成果', icon: '📊', color: '#34a853' },
+    { key: 'keywords', name: '关键词优化', icon: '🏷️', color: '#f5a623' },
+    { key: 'language', name: '语言表达', icon: '✍️', color: '#ea4335' },
+    { key: 'format', name: '格式排版', icon: '📄', color: '#00bcd4' },
+  ];
+
+  const card = document.getElementById('result-card');
+  card.innerHTML = `
+    <!-- Score Hero -->
+    <div class="score-hero">
+      <div class="score-circle">
+        <svg width="140" height="140" viewBox="0 0 140 140">
+          <circle cx="70" cy="70" r="54" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="10"/>
+          <circle cx="70" cy="70" r="54" fill="none" stroke="${gradeColor}" stroke-width="10"
+            stroke-dasharray="${circumference}" stroke-dashoffset="${dashOffset}"
+            stroke-linecap="round" style="transition:stroke-dashoffset 1.2s ease"/>
+        </svg>
+        <div class="score-value">
+          <span class="score-num" style="color:${gradeColor}">${r.total}</span>
+          <span class="score-label">/ 100 分</span>
+        </div>
+      </div>
+      <div class="score-grade" style="color:${gradeColor}">🏆 ${grade}</div>
+    </div>
+
+    <!-- Dimension Scores -->
+    <div class="tips-section">
+      <h3>六维评分</h3>
+      <div class="dim-list">
+        ${dims.map(d => {
+          const dim = r[d.key];
+          return `
+          <div class="dim-row">
+            <div class="dim-icon" style="background:${d.color}22;color:${d.color}">${d.icon}</div>
+            <div class="dim-info">
+              <div class="dim-name">${d.name}</div>
+              <div class="dim-bar"><div class="dim-bar-fill" style="width:${(dim.score/dim.max)*100}%;background:${d.color}"></div></div>
+            </div>
+            <div class="dim-score" style="color:${d.color}">${dim.score}<span style="font-size:0.65rem;font-weight:400">/${dim.max}</span></div>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>
+
+    <!-- Free Tips -->
+    <div class="tips-section">
+      <h3>🆓 免费优化建议</h3>
+      ${tips.map((t, i) => `
+        <div class="tip-item">
+          <div class="tip-num">${i + 1}</div>
+          <div>${t.text}</div>
+        </div>
+      `).join('')}
+    </div>
+
+    <!-- Premium Section -->
+    <div class="premium-lock">
+      <div class="premium-preview">
+        <div class="tips-section">
+          <h3>🔒 完整优化报告</h3>
+          <div class="dim-list">
+            ${premiumTips.map(t => `
+            <div class="dim-row">
+              <div class="dim-icon" style="background:rgba(255,255,255,0.04);color:var(--text2)">${t.icon}</div>
+              <div class="dim-info">
+                <div class="dim-name" style="font-size:0.8rem">${t.dim}</div>
+                <div style="font-size:0.7rem;color:var(--text2)">${t.text}</div>
+              </div>
+            </div>
+            `).join('')}
+          </div>
+        </div>
+      </div>
+
+      <div class="premium-cta">
+        <h3>🔓 解锁完整优化报告</h3>
+        <p>6 大维度深度分析 · 针对性修改建议 · 行业关键词推荐<br>获得完整的简历优化方案，拿到更多面试机会</p>
+        <div class="price-tag">¥9.90</div>
+        <button class="btn btn-gold" style="margin-top:12px" onclick="openPayModal()">💰 解锁完整报告</button>
+      </div>
+    </div>
+
+    <div style="margin-top:16px;text-align:center">
+      <button class="btn btn-outline btn-sm" onclick="showScreen('screen-input')">🔄 重新分析</button>
+    </div>
+  `;
+
+  showScreen('screen-result');
+
+  // Re-trigger animations
+  setTimeout(() => {
+    card.querySelectorAll('.dim-bar-fill').forEach(el => { el.style.width = el.style.width; });
+  }, 150);
+}
+
+// ─── Payment Modal ─────────────────────────
+function openPayModal() { document.getElementById('pay-modal').classList.add('active'); }
+function closePayModal() { document.getElementById('pay-modal').classList.remove('active'); }
+function switchPay(method, btn) {
+  document.querySelectorAll('#pay-modal .pay-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  const qr = document.getElementById('pay-qr');
+  qr.innerHTML = `<div style="font-size:1.5rem;">${method === 'wechat' ? '💚' : '💙'}</div><div>¥9.90</div><div style="font-size:0.65rem;">${method === 'wechat' ? '微信' : '支付宝'}扫码支付</div>`;
+}
+
+function simulatePay() {
+  closePayModal();
+  isPremium = true;
+  const card = document.getElementById('result-card');
+  // Remove premium lock
+  const lock = card.querySelector('.premium-lock');
+  if (lock) {
+    const premiumTips = generatePremiumTips(currentResults);
+    lock.outerHTML = `
+      <div class="tips-section">
+        <h3>🔓 完整优化报告（已解锁）</h3>
+        <div class="dim-list">
+          ${premiumTips.map(t => `
+          <div class="dim-row">
+            <div class="dim-icon" style="background:rgba(74,144,255,0.1);color:var(--blue)">${t.icon}</div>
+            <div class="dim-info">
+              <div class="dim-name" style="font-size:0.8rem">${t.dim}</div>
+              <div style="font-size:0.78rem;color:var(--text2);line-height:1.6">${t.text}</div>
+            </div>
+          </div>
+          `).join('')}
+        </div>
+      </div>
+      <div style="text-align:center;padding:14px;background:rgba(52,168,83,0.06);border-radius:10px;border:1px solid rgba(52,168,83,0.15);margin-top:10px">
+        <span style="color:var(--green);font-weight:600">✅ 报告已解锁</span>
+        <span style="font-size:0.78rem;color:var(--text2);margin-left:8px">建议截图保存优化建议</span>
+      </div>
+    `;
+  }
+}
+
+// ─── Keyboard shortcut ────────────────────
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closePayModal();
+});
+</script>
+</body>
+</html>

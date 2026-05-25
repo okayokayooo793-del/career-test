@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>广告法合规检查 - AI智能审查文案风险</title>
+<style>
+  :root {
+    --bg: #fafbfc; --card: #fff; --text: #1a1a2e; --text2: #666; --border: #e8eaed;
+    --red: #d93025; --orange: #e37400; --yellow: #f9ab00; --green: #188038;
+    --blue: #1a73e8; --blue2: #1557b0; --radius: 14px; --radius-sm: 10px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+    background: var(--bg); color: var(--text); min-height: 100dvh;
+    -webkit-font-smoothing: antialiased; line-height: 1.6;
+  }
+
+  /* Header */
+  .header {
+    background: #fff; border-bottom: 1px solid var(--border);
+    padding: 14px 20px; position: sticky; top: 0; z-index: 10;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .header-logo { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 1rem; }
+  .header-logo .icon { font-size: 1.4rem; }
+  .header-actions { display: flex; gap: 8px; }
+  .btn-header {
+    padding: 6px 14px; border-radius: 20px; border: none; cursor: pointer;
+    font-size: 0.78rem; font-weight: 600; font-family: inherit;
+  }
+  .btn-header.login { background: var(--blue); color: #fff; }
+  .btn-header.free { background: #e8f0fe; color: var(--blue); }
+
+  /* Main layout */
+  .app { max-width: 960px; margin: 0 auto; padding: 24px 16px; }
+
+  /* Input area */
+  .input-section { margin-bottom: 20px; }
+  .input-card {
+    background: var(--card); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 24px; box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+  }
+  .input-card h2 { font-size: 1.15rem; margin-bottom: 4px; }
+  .input-card .desc { font-size: 0.8rem; color: var(--text2); margin-bottom: 16px; }
+
+  .industry-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
+  .industry-tag {
+    padding: 5px 14px; border-radius: 20px; font-size: 0.75rem; cursor: pointer;
+    border: 1.5px solid var(--border); background: #fff; font-family: inherit;
+    transition: all 0.2s; color: var(--text2);
+  }
+  .industry-tag.active { border-color: var(--blue); background: #e8f0fe; color: var(--blue); font-weight: 600; }
+
+  .text-input {
+    width: 100%; min-height: 140px; padding: 14px; border: 2px solid var(--border);
+    border-radius: var(--radius-sm); font-size: 0.9rem; font-family: inherit;
+    line-height: 1.7; resize: vertical; outline: none; transition: border 0.2s;
+  }
+  .text-input:focus { border-color: var(--blue); }
+  .text-input::placeholder { color: #ccc; }
+
+  .input-actions { display: flex; gap: 10px; margin-top: 14px; flex-wrap: wrap; }
+  .btn {
+    padding: 12px 24px; border: none; border-radius: 10px; font-size: 0.9rem;
+    font-weight: 600; cursor: pointer; font-family: inherit; transition: all 0.2s;
+  }
+  .btn-check {
+    background: var(--blue); color: #fff; box-shadow: 0 2px 8px rgba(26,115,232,0.2);
+  }
+  .btn-check:hover { background: var(--blue2); transform: translateY(-1px); }
+  .btn-clear { background: #f1f3f4; color: var(--text2); }
+  .btn-demo { background: #e8f0fe; color: var(--blue); font-size: 0.8rem; }
+
+  .word-count { font-size: 0.72rem; color: #999; text-align: right; margin-top: 6px; }
+
+  /* Results */
+  .result-section { display: none; }
+  .result-section.active { display: block; animation: fadeIn 0.4s ease; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+
+  .score-banner {
+    display: flex; align-items: center; gap: 16px; padding: 20px 24px;
+    border-radius: var(--radius); margin-bottom: 18px;
+  }
+  .score-circle {
+    width: 80px; height: 80px; border-radius: 50%; display: flex;
+    flex-direction: column; align-items: center; justify-content: center;
+    flex-shrink: 0; font-weight: 800;
+  }
+  .score-circle .num { font-size: 1.8rem; line-height: 1; }
+  .score-circle .label { font-size: 0.65rem; }
+  .score-circle.safe { background: #e6f4ea; color: var(--green); }
+  .score-circle.warn { background: #fef7e0; color: var(--orange); }
+  .score-circle.danger { background: #fce8e6; color: var(--red); }
+  .safe-bg { background: #e6f4ea; border: 1px solid #ceead6; }
+  .warn-bg { background: #fef7e0; border: 1px solid #fde293; }
+  .danger-bg { background: #fce8e6; border: 1px solid #f5c6c2; }
+  .score-info { flex: 1; }
+  .score-info h3 { font-size: 1.1rem; margin-bottom: 4px; }
+  .score-info p { font-size: 0.82rem; color: var(--text2); line-height: 1.5; }
+
+  .issue-list { margin-bottom: 18px; }
+  .issue-list h3 { font-size: 0.9rem; margin-bottom: 10px; }
+  .issue-card {
+    display: flex; gap: 12px; padding: 12px 16px; border-radius: 10px;
+    margin-bottom: 8px; align-items: flex-start;
+  }
+  .issue-card.severe { background: #fce8e6; border: 1px solid #f5c6c2; }
+  .issue-card.moderate { background: #fef7e0; border: 1px solid #fde293; }
+  .issue-card.suggest { background: #e8f0fe; border: 1px solid #c6dafc; }
+  .issue-badge {
+    width: 28px; height: 28px; border-radius: 50%; display: flex;
+    align-items: center; justify-content: center; font-size: 0.8rem; flex-shrink: 0;
+    font-weight: 700;
+  }
+  .severe .issue-badge { background: var(--red); color: #fff; }
+  .moderate .issue-badge { background: var(--orange); color: #fff; }
+  .suggest .issue-badge { background: var(--blue); color: #fff; }
+  .issue-content { flex: 1; min-width: 0; }
+  .issue-content .issue-word {
+    font-weight: 700; padding: 1px 8px; border-radius: 4px; font-size: 0.85rem;
+  }
+  .severe .issue-word { background: #f5c6c2; }
+  .moderate .issue-word { background: #fde293; }
+  .suggest .issue-word { background: #c6dafc; }
+  .issue-content .issue-rule { font-size: 0.82rem; margin-top: 4px; }
+  .issue-content .issue-fix { font-size: 0.75rem; color: var(--text2); margin-top: 2px; }
+  .issue-highlight {
+    margin-top: 6px; padding: 8px 12px; background: rgba(0,0,0,0.03);
+    border-radius: 6px; font-size: 0.75rem; color: var(--text2);
+    font-family: 'SF Mono', 'Consolas', monospace; word-break: break-all;
+    border-left: 3px solid #ddd;
+  }
+  .issue-highlight mark { background: #ffe066; padding: 1px 3px; border-radius: 2px; }
+
+  .premium-upsell {
+    background: linear-gradient(135deg, #1a1a2e, #2d3436); color: #fff;
+    border-radius: var(--radius); padding: 28px 24px; text-align: center;
+    position: relative; margin-top: 16px;
+    border: 1px solid rgba(255,255,255,0.1);
+  }
+  .premium-upsell .lock-icon { font-size: 2rem; margin-bottom: 8px; }
+  .premium-upsell h3 { font-size: 1.1rem; margin-bottom: 6px; }
+  .premium-upsell p { font-size: 0.82rem; opacity: 0.8; margin-bottom: 16px; }
+  .premium-list { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; text-align: left; margin-bottom: 16px; }
+  .premium-list div { font-size: 0.78rem; opacity: 0.7; }
+  .btn-upgrade {
+    display: inline-block; padding: 12px 28px; background: #ffd700; color: #1a1a2e;
+    border-radius: 10px; font-weight: 700; cursor: pointer; border: none;
+    font-family: inherit; font-size: 0.9rem;
+  }
+
+  .report-files { margin-top: 14px; display: flex; gap: 8px; flex-wrap: wrap; }
+  .report-btn {
+    padding: 8px 16px; border-radius: 8px; border: 1.5px solid var(--border);
+    background: #fff; cursor: pointer; font-size: 0.78rem; font-family: inherit;
+    color: var(--text2); transition: all 0.2s;
+  }
+  .report-btn:hover { border-color: var(--blue); color: var(--blue); }
+
+  @media (max-width: 500px) {
+    .app { padding: 16px 10px; }
+    .input-card { padding: 16px; }
+    .score-banner { flex-direction: column; text-align: center; }
+    .premium-list { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-logo"><span class="icon">🛡️</span>广告法合规检查</div>
+  <div class="header-actions">
+    <span style="font-size:0.72rem;color:var(--text2);margin-right:4px;">🆓 每日免费 3 次</span>
+  </div>
+</div>
+
+<div class="app">
+
+  <!-- Input -->
+  <div class="input-section">
+    <div class="input-card">
+      <h2>📝 粘贴你的广告文案</h2>
+      <p class="desc">自动检测违反《中华人民共和国广告法》的违禁词和风险表述</p>
+
+      <div class="industry-tags" id="industry-tags">
+        <button class="industry-tag active" data-industry="general">📋 通用</button>
+        <button class="industry-tag" data-industry="food">🍜 食品</button>
+        <button class="industry-tag" data-industry="cosmetic">💄 化妆品</button>
+        <button class="industry-tag" data-industry="medical">🏥 医疗/药品</button>
+        <button class="industry-tag" data-industry="edu">📚 教育培训</button>
+        <button class="industry-tag" data-industry="finance">💰 金融理财</button>
+        <button class="industry-tag" data-industry="estate">🏠 房地产</button>
+      </div>
+
+      <textarea class="text-input" id="text-input" placeholder="在此粘贴需要检查的广告文案、商品描述、推广语...
+例如：
+&#10;我们家的面膜是最好的，100%纯天然成分，绝对没有任何副作用，用了一周就能让你变白，全国销量第一！"></textarea>
+      <div class="word-count" id="word-count">0 字</div>
+
+      <div class="input-actions">
+        <button class="btn btn-check" onclick="runCheck()">🔍 开始检查</button>
+        <button class="btn btn-clear" onclick="clearText()">清空</button>
+        <button class="btn btn-demo" onclick="loadDemo()">📋 加载示例</button>
+        <span style="font-size:0.72rem;color:var(--text2);align-self:center;" id="quota-info">今日剩余：3 次</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Results -->
+  <div class="result-section" id="result-section">
+    <div id="result-content"></div>
+  </div>
+
+</div>
+
+<script>
+// ─── Rule Database ──────────────────────────
+const ruleDB = {
+  // 通用广告法违禁词（绝对化用语）
+  general: {
+    severe: [
+      { words: ['最好','最佳','最好用','最有效','最优秀'], rule: '《广告法》第九条第三项：禁止使用"最高级""最佳"等绝对化用语', fix: '改用"优秀""出色""广受好评"' },
+      { words: ['第一','首个','首家','独家','唯一'], rule: '《广告法》第九条：禁止使用"第一""唯一"等排他性表述（有证据除外）', fix: '如确为事实，需注明数据来源和年份' },
+      { words: ['国家级','世界级','最高级','顶级','顶尖','终极','极品'], rule: '《广告法》第九条：禁止使用"国家级""最高级""顶级"等用语', fix: '改用"高品质""专业级""精心打造"' },
+      { words: ['万能','绝对','100%','百分百','百分之百'], rule: '《广告法》禁止绝对化承诺', fix: '改用"大多数""基本上""一般情况"' },
+      { words: ['全网第一','全国第一','全球第一','销量第一','排名第一'], rule: '《广告法》禁止无数据来源的排名宣称', fix: '如确为事实，需注明数据来源、时间范围、统计口径' },
+      { words: ['最安全','最可靠','最值得信赖'], rule: '《广告法》禁止绝对化信任背书', fix: '改用"值得信赖""安全可靠"' },
+    ],
+    moderate: [
+      { words: ['领先','领导品牌','领军'], rule: '注意：行业地位宣���需有客观证据支撑', fix: '如无法证明，建议改为"知名品牌"或删除' },
+      { words: ['金牌','王牌','冠军'], rule: '注意：荣誉类用语需真实可查证', fix: '确保有对应获奖证书' },
+      { words: ['永久','终身','一辈子'], rule: '注意：无限期承诺可能违反消费者权益保护法', fix: '明确具体期限' },
+    ],
+  },
+  // 食品行业专项
+  food: {
+    severe: [
+      { words: ['治疗','治愈','医治','药效','疗效'], rule: '《食品安全法》第七十三条：食品广告不得涉及疾病治疗功能', fix: '删除涉及治疗功能的表述' },
+      { words: ['排毒','解毒','消炎','抗菌','杀菌','消毒'], rule: '食品不得宣称具有药理作用', fix: '删除药理学相关词汇' },
+      { words: ['减肥','瘦身','燃脂','减脂','掉秤'], rule: '普通食品不得宣称减肥功效（仅保健食品经审批后可）', fix: '删除减重相关宣称' },
+      { words: ['防癌','抗癌','抗肿瘤'], rule: '食品绝对不得宣称抗癌功效', fix: '立即删除' },
+      { words: ['安全','无毒','无副作用'], rule: '暗示安全性可能构成药品宣传，食品不得使用', fix: '改为"干净""卫生"' },
+      { words: ['增高','丰胸','壮阳','补肾','强精'], rule: '食品不得宣称人体功能改善', fix: '删除相关功效宣称' },
+    ],
+    moderate: [
+      { words: ['纯天然','纯植物','零添加','无添加'], rule: '注意：需确保证据充分，"纯天然"无官方认证标准', fix: '改为"原料来自XX产地"等具体描述' },
+      { words: ['低糖','低脂','高蛋白','富含'], rule: '注意：营养声称需符合GB 28050标准数值要求', fix: '标注具体营养成分含量(g/100g)' },
+    ],
+  },
+  // 化妆品
+  cosmetic: {
+    severe: [
+      { words: ['治疗','药妆','医学护肤','药效'], rule: '《化妆品监督管理条例》禁止化妆品宣称医疗效果', fix: '删除医疗相关用语' },
+      { words: ['消炎','抗菌','杀菌','抗敏','修复'], rule: '化妆品不得使用药理学术语', fix: '改用"舒缓""保湿""清洁"' },
+      { words: ['干细胞','基因','DNA','细胞修复','再生'], rule: '化妆品禁止使用细胞级、基因级功效宣称', fix: '删除生物学术语' },
+      { words: ['7天美白','一周祛斑','3天祛痘'], rule: '禁止使用绝对化时效承诺', fix: '改为"长期使用有助于改善肤质"' },
+      { words: ['无敏','不过敏','适合所有肤质'], rule: '不得宣称绝对安全性', fix: '改为"经皮肤测试""温和配方"' },
+    ],
+  },
+  // 医疗/药品
+  medical: {
+    severe: [
+      { words: ['包治','根治','彻底治愈','永不复发'], rule: '《医疗广告管理办法》禁止保证治愈', fix: '删除治愈承诺' },
+      { words: ['无痛','无创','无风险'], rule: '医疗广告不得隐瞒风险', fix: '如实告知风险' },
+    ],
+  },
+  // 教育培训
+  edu: {
+    severe: [
+      { words: ['包过','保过','保证通过','不过退费','保分'], rule: '《广告法》第二十四条：教育广告不得对效果做保证性承诺', fix: '改为"助力备考""帮助提升"' },
+      { words: ['命题组','出题人','阅卷老师','内部资料'], rule: '严禁暗示与考试命题相关人员有关联', fix: '立即删除' },
+      { words: ['包就业','保证就业','100%就业','包分配'], rule: '教育培训广告不得对就业做保证性承诺', fix: '改为"提供就业指导服务"' },
+      { words: ['押题','命中率','精准预测'], rule: '教育培训广告不得明示或暗示押题', fix: '删除押题相关表述' },
+      { words: ['年薪XX万','月入过万','高薪就业'], rule: '不得对培训后收入做承诺', fix: '可改为行业薪资水平介绍（注明来源）' },
+    ],
+  },
+  // 金融理财
+  finance: {
+    severe: [
+      { words: ['保本','保底','保收益','保证收益','刚兑'], rule: '《关于规范金融机构资产管理业务的指导意见》禁止保本保收益承诺', fix: '删除保本相关表述，提示投资风险' },
+      { words: ['无风险','零风险','稳赚','稳赢','躺赚'], rule: '金融广告必须提示风险，不得做无风险暗示', fix: '添加风险提示：投资有风险，理财需谨慎' },
+      { words: ['翻倍','翻番','暴富','暴涨'], rule: '不得对未来收益做夸大承诺', fix: '改为"追求长期稳健回报"' },
+      { words: ['年化率','收益率', '日收益'], rule: '不得单独强调收益而不提风险', fix: '须同时披露风险提示（字号不小于收益描述）' },
+    ],
+  },
+  // 房地产
+  estate: {
+    severe: [
+      { words: ['升值','包租','返租','投资回报'], rule: '《房地产广告发布规定》禁止承诺升值或投资回报', fix: '删除升值相关承诺' },
+      { words: ['风水','龙脉','宝地'], rule: '房地产广告不得含有风水、占卜等封建迷信内容', fix: '删除风水相关表述' },
+      { words: ['距XX分钟','开车X分钟'], rule: '房地产广告中距离须以实际距离（米/公里）标注', fix: '改为实际距离：如"距地铁站500米"' },
+    ],
+  },
+};
+
+// ─── State ──────────────────────────────────
+let currentIndustry = 'general';
+let checkQuota = 3;
+
+// ─── Industry Selection ─────────────────────
+document.getElementById('industry-tags').addEventListener('click', e => {
+  if (e.target.classList.contains('industry-tag')) {
+    document.querySelectorAll('.industry-tag').forEach(t => t.classList.remove('active'));
+    e.target.classList.add('active');
+    currentIndustry = e.target.dataset.industry;
+  }
+});
+
+// ─── Text Input ─────────────────────────────
+document.getElementById('text-input').addEventListener('input', () => {
+  const len = document.getElementById('text-input').value.length;
+  document.getElementById('word-count').textContent = `${len} 字`;
+});
+
+function clearText() {
+  document.getElementById('text-input').value = '';
+  document.getElementById('word-count').textContent = '0 字';
+  document.getElementById('result-section').classList.remove('active');
+}
+
+function loadDemo() {
+  document.getElementById('text-input').value = '我们的面膜是最好的，100%纯天然成分，绝对没有任何副作用，用了一周就能让你美白祛斑，全国销量第一！日本进口顶级原料，治愈各种肌肤问题，7天见效，无效退款！';
+  document.getElementById('word-count').textContent = document.getElementById('text-input').value.length + ' 字';
+}
+
+// ─── Check Engine ───────────────────────────
+function runCheck() {
+  const text = document.getElementById('text-input').value.trim();
+  if (!text) { alert('请先粘贴需要检查的文案'); return; }
+  if (checkQuota <= 0) {
+    showPremiumUpgrade('免费次数已用完');
+    return;
+  }
+
+  checkQuota--;
+  document.getElementById('quota-info').textContent = `今日剩余：${checkQuota} 次`;
+
+  const results = analyze(text, currentIndustry);
+  renderResults(results, text);
+  document.getElementById('result-section').classList.add('active');
+  document.getElementById('result-section').scrollIntoView({ behavior: 'smooth' });
+}
+
+function analyze(text, industry) {
+  const issues = [];
+  const rulesToCheck = [];
+
+  // 通用规则始终检查
+  if (ruleDB.general) {
+    rulesToCheck.push(...(ruleDB.general.severe || []).map(r => ({ ...r, level: 'severe' })));
+    rulesToCheck.push(...(ruleDB.general.moderate || []).map(r => ({ ...r, level: 'moderate' })));
+  }
+
+  // 行业专项规则
+  if (ruleDB[industry]) {
+    rulesToCheck.push(...(ruleDB[industry].severe || []).map(r => ({ ...r, level: 'severe' })));
+    rulesToCheck.push(...(ruleDB[industry].moderate || []).map(r => ({ ...r, level: 'moderate' })));
+  }
+
+  rulesToCheck.forEach(rule => {
+    rule.words.forEach(word => {
+      const idx = text.indexOf(word);
+      if (idx !== -1) {
+        // 提取上下文
+        const start = Math.max(0, idx - 12);
+        const end = Math.min(text.length, idx + word.length + 12);
+        let ctx = text.substring(start, end);
+        if (start > 0) ctx = '...' + ctx;
+        if (end < text.length) ctx = ctx + '...';
+
+        issues.push({
+          word,
+          rule: rule.rule,
+          fix: rule.fix,
+          level: rule.level,
+          context: ctx,
+          position: idx,
+        });
+      }
+    });
+  });
+
+  // 额外检查：感叹号密度
+  const exclaimCount = (text.match(/！|!/g) || []).length;
+  if (exclaimCount > 3) {
+    issues.push({
+      word: '！/!',
+      rule: '广告文案中感叹号过多(>3个)可能构成夸大宣传',
+      fix: '减少感叹号使用，用数据和事实代替情绪化表达',
+      level: 'suggest',
+      context: `全文出现 ${exclaimCount} 个感叹号`,
+      position: -1,
+    });
+  }
+
+  // 额外检查：价格未标明货币单位
+  if (/[¥￥]?\d+[元块]/.test(text) && !/[¥￥]/.test(text)) {
+    issues.push({
+      word: '价格标注',
+      rule: '价格应明确标注币种符号（¥）',
+      fix: '如"99元"改为"¥99"',
+      level: 'suggest',
+      context: '全文价格未使用标准¥符号',
+      position: -1,
+    });
+  }
+
+  return issues;
+}
+
+function renderResults(issues, text) {
+  const severeCount = issues.filter(i => i.level === 'severe').length;
+  const moderateCount = issues.filter(i => i.level === 'moderate').length;
+  const suggestCount = issues.filter(i => i.level === 'suggest').length;
+  const totalIssues = issues.length;
+
+  let scoreLevel, scoreBg, scoreCls, scoreEmoji;
+  if (totalIssues === 0 || severeCount === 0) {
+    scoreLevel = '合格'; scoreBg = 'safe-bg'; scoreCls = 'safe'; scoreEmoji = '✅';
+  } else if (severeCount <= 2) {
+    scoreLevel = '需修改'; scoreBg = 'warn-bg'; scoreCls = 'warn'; scoreEmoji = '⚠️';
+  } else {
+    scoreLevel = '高风险'; scoreBg = 'danger-bg'; scoreCls = 'danger'; scoreEmoji = '🚨';
+  }
+
+  const riskScore = totalIssues === 0 ? 100 : Math.max(0, 100 - severeCount * 25 - moderateCount * 10 - suggestCount * 3);
+
+  const container = document.getElementById('result-content');
+  let html = `
+    <div class="score-banner ${scoreBg}">
+      <div class="score-circle ${scoreCls}">
+        <span class="num">${riskScore}</span><span class="label">合规分</span>
+      </div>
+      <div class="score-info">
+        <h3>${scoreEmoji} ${scoreLevel}</h3>
+        <p>${totalIssues === 0 ? '未发现违禁词，文案符合广告法要求。' : `发现 <b>${severeCount}</b> 条严重违禁、<b>${moderateCount}</b> 条中等风险、<b>${suggestCount}</b> 条优化建议`}</p>
+      </div>
+    </div>`;
+
+  if (issues.length > 0) {
+    html += `<div class="issue-list"><h3>📋 问题详情</h3>`;
+
+    issues.sort((a, b) => {
+      const order = { severe: 0, moderate: 1, suggest: 2 };
+      return order[a.level] - order[b.level];
+    }).forEach(issue => {
+      const levelLabel = { severe: '严重', moderate: '注意', suggest: '建议' }[issue.level];
+      html += `
+      <div class="issue-card ${issue.level}">
+        <div class="issue-badge">${levelLabel[0]}</div>
+        <div class="issue-content">
+          <div>违禁词：<span class="issue-word">${escapeHtml(issue.word)}</span></div>
+          <div class="issue-rule">📜 ${issue.rule}</div>
+          <div class="issue-fix">💡 ${issue.fix}</div>
+          ${issue.position >= 0 ? `<div class="issue-highlight">${escapeHtml(issue.context).replace(issue.word, '<mark>' + issue.word + '</mark>')}</div>` : ''}
+        </div>
+      </div>`;
+    });
+    html += `</div>`;
+  }
+
+  // Premium upsell (only show if user still has quota or has issues)
+  if (issues.length > 0 && checkQuota <= 0) {
+    html += renderPremiumUpsell();
+  }
+
+  html += `
+    <div class="report-files">
+      <button class="report-btn" onclick="copyReport()">📋 复制报告</button>
+      <button class="report-btn" onclick="window.print()">🖨️ 打印报告</button>
+      <button class="report-btn" onclick="clearText();document.getElementById('result-section').classList.remove('active')">🔄 检查新文案</button>
+    </div>`;
+
+  container.innerHTML = html;
+}
+
+function renderPremiumUpsell() {
+  return `
+    <div class="premium-upsell">
+      <div class="lock-icon">🔐</div>
+      <h3>升级专业版 · 解锁完整功能</h3>
+      <p>免费版至此结束。专业版提供：</p>
+      <div class="premium-list">
+        <div>✅ 无限次检查</div>
+        <div>✅ 7大行业全面覆盖</div>
+        <div>✅ 智能改写建议</div>
+        <div>✅ 导出 PDF 合规报告</div>
+        <div>✅ 批量检查（一次 100 条）</div>
+        <div>✅ API 接口对接</div>
+        <div>✅ 历史记录保存</div>
+        <div>✅ 法规更新同步</div>
+      </div>
+      <button class="btn-upgrade" onclick="alert('💰 购买渠道：\\n\\n1. 面包多(mbd.pub)搜索"广告法合规检查"\\n2. 闲鱼联系我获取优惠\\n\\n💰 定价：¥199/月 · ¥999/年')">💰 ¥199/月 · 立即升级</button>
+      <div style="font-size:0.7rem;opacity:0.5;margin-top:8px;">⚠️ 此处需接入真实支付（面包多/PayJS）</div>
+    </div>`;
+}
+
+function showPremiumUpgrade(reason) {
+  const container = document.getElementById('result-content');
+  container.innerHTML = `
+    <div class="score-banner warn-bg">
+      <div class="score-circle warn"><span class="num">0</span><span class="label">剩余</span></div>
+      <div class="score-info">
+        <h3>⚠️ ${reason}</h3>
+        <p>免费版每天 3 次检查。升级专业版无限使用。</p>
+      </div>
+    </div>
+    ${renderPremiumUpsell()}`;
+  document.getElementById('result-section').classList.add('active');
+}
+
+function copyReport() {
+  const text = document.getElementById('result-content').innerText;
+  navigator.clipboard.writeText(text).then(() => alert('✅ 报告已复制到剪贴板'));
+}
+
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+</script>
+</body>
+</html>
